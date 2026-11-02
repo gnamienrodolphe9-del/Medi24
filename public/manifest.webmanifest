@@ -1,0 +1,21 @@
+{
+  "name": "Medi24",
+  "short_name": "Medi24",
+  "description": "Pharmacies de garde et médicaments, la nuit, à Yopougon.",
+  "lang": "fr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f5f6f1",
+  "theme_color": "#0a6847",
+  "icons": [
+    { "src": "/icons/icone-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icone-512.png", "sizes": "512x512", "type": "image/png" },
+    {
+      "src": "/icons/icone-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

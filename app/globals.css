@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+/* Couleurs de Medi24, reprises des maquettes */
+@theme {
+  --color-fond: #f5f6f1;
+  --color-encre: #14211b;
+  --color-discret: #4f5d56;
+  --color-trait: #d5dbd3;
+  --color-vert: #0a6847;
+  --color-vert-clair: #e3f1ea;
+  --color-vert-fonce: #0a4a33;
+  --color-rouge: #b42318;
+  --color-rouge-clair: #fdecea;
+  --color-ambre: #fff3d6;
+  --color-ambre-fonce: #5c3a00;
+  --font-sans: var(--police-figtree), system-ui, sans-serif;
+}
+
+html,
+body {
+  background: var(--color-fond);
+  color: var(--color-encre);
+}
+
+/* Zone tactile minimale de 44 px pour tous les boutons et liens d'action */
+a,
+button {
+  -webkit-tap-highlight-color: transparent;
+}
