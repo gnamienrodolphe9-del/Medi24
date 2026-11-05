@@ -50,7 +50,7 @@ egal("trop de produits", (validerDemande({ ...bon, produits: Array.from({ length
 egal("position invalide", (validerDemande({ ...bon, latitude: 200, longitude: 0 }) as any).ok, false);
 
 // Totaux
-const L = (o: any) => ({ id: "x", produit: "p", disponible: true, substitut: null, prix_fcfa: 0, substitut_accepte: null, ...o });
+const L = (o: any = {}) => ({ id: "x", produit: "p", disponible: true, substitut: null, prix_fcfa: 0, substitut_accepte: null, ...o });
 egal("total simple", totalLignes([L({ prix_fcfa: 1000 }), L({ prix_fcfa: 500 })]), { total: 1500, prixManquant: false });
 egal("substitut refusé", totalLignes([L({ prix_fcfa: 1000 }), L({ disponible: false, substitut: "s", prix_fcfa: 700, substitut_accepte: false })]), { total: 1000, prixManquant: false });
 egal("substitut accepté", totalLignes([L({ prix_fcfa: 1000 }), L({ disponible: false, substitut: "s", prix_fcfa: 700, substitut_accepte: true })]), { total: 1700, prixManquant: false });
