@@ -3,6 +3,7 @@ import { avancerCascade } from "./cascade";
 import { adresseSite } from "./http";
 import { alerterAdmin, envoyerSms } from "./sms";
 import { smsGardeSoir } from "@/lib/messages";
+import { options } from "@/lib/options";
 
 // Tâches automatiques, appelées par pg_cron via /api/cron/[tache].
 
@@ -28,6 +29,7 @@ export async function tacheCascade(db: SupabaseClient): Promise<{ demandes: numb
 
 // Chaque soir : demande aux pharmacies de confirmer leur garde de la nuit.
 export async function tacheGardesSoir(db: SupabaseClient): Promise<{ envoyes: number; sansNumero: number }> {
+  if (!options.smsGardeSoir()) return { envoyes: 0, sansNumero: 0 };
   const maintenant = new Date();
   const dans10h = new Date(maintenant.getTime() + 10 * 3600 * 1000);
   const { data } = await db

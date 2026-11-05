@@ -32,6 +32,12 @@ function Contenu() {
     charger();
   }, [charger]);
 
+  // Les liens des indicateurs arrivent avec un filtre (par exemple ?filtre=sms).
+  useEffect(() => {
+    const f = new URLSearchParams(window.location.search).get("filtre");
+    if (f) setFiltre(f);
+  }, []);
+
   const visibles = lignes.filter((l) => {
     if (seulementProblemes && !/echec|erreur|supervision|repli|expiree/.test(l.evenement)) return false;
     return !filtre || l.evenement.toLowerCase().includes(filtre.toLowerCase());

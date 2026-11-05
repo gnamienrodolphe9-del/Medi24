@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   BOUTON_PRINCIPAL,
   BOUTON_SECONDAIRE,
@@ -54,6 +54,22 @@ type LigneForm = { produit: string; disponible: boolean; substitut: string; prix
 
 function Contenu({ jeton, vue, rafraichir }: { jeton: string; vue: VuePharmacie; rafraichir: () => Promise<void> }) {
   const d = vue.demande;
+
+  // Pas de SMS quand le patient confirme : la page vibre et change de titre.
+  const precedent = useRef<string | null>(null);
+  useEffect(() => {
+    const cle = `${d.etat}|${d.mode ?? ""}|${vue.estRetenue}`;
+    if (precedent.current !== null && precedent.current !== cle) {
+      try {
+        navigator.vibrate?.([250, 120, 250]);
+      } catch {
+        // Vibration indisponible : sans importance.
+      }
+      if (vue.estRetenue && d.mode) document.title = "Medi24 · Le patient a confirmé";
+    }
+    precedent.current = cle;
+  }, [d.etat, d.mode, vue.estRetenue]);
+
   const termine = ["remise", "annulee", "expiree", "repli"].includes(d.etat);
 
   return (

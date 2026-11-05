@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import CadreAdmin from "@/components/admin/CadreAdmin";
 import Champ from "@/components/admin/Champ";
@@ -289,7 +290,9 @@ function ContenuPharmacies() {
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <h3 className="text-[17px] font-extrabold leading-tight">{p.nom}</h3>
+                  <h3 className="text-[17px] font-extrabold leading-tight">
+                    <Link href={`/admin/pharmacies/${p.id}`} className="underline decoration-trait underline-offset-4">{p.nom}</Link>
+                  </h3>
                   <p className="mt-1 text-[13px] text-discret">
                     {[p.adresse, p.repere].filter(Boolean).join(" · ") || "Adresse non renseignée"}
                   </p>

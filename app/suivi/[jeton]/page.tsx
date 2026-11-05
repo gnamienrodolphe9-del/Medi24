@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import EnTete from "@/components/EnTete";
 import CarteSimple, { type Repere } from "@/components/CarteSimple";
 import {
@@ -18,7 +18,7 @@ import {
 } from "@/components/ui";
 import { envoyerJson, useSondage } from "@/lib/client/api";
 import { memoriserDemande, oublierDemande } from "@/lib/client/memoire";
-import { estEnRecherche } from "@/lib/etats";
+import { estEnRecherche, libelleEtat } from "@/lib/etats";
 import { formaterDistance, lienItineraire } from "@/lib/garde";
 import { formaterFcfa, substitutsEnAttente, totalLignes } from "@/lib/totaux";
 import type { SuiviPatient } from "@/lib/serveur/suivi";
@@ -40,6 +40,23 @@ export default function PageSuivi() {
     if (jeton && statut === 200) memoriserDemande(jeton);
     if (statut === 404) oublierDemande();
   }, [jeton, statut]);
+
+  // Le suivi remplace les SMS : à chaque changement d'état, le téléphone vibre et le titre
+  // de l'onglet change, pour qu'un patient qui regarde autre chose le remarque.
+  const etatPrecedent = useRef<string | null>(null);
+  useEffect(() => {
+    if (!suivi) return;
+    const cle = `${suivi.etat}|${suivi.mode ?? ""}`;
+    if (etatPrecedent.current !== null && etatPrecedent.current !== cle) {
+      try {
+        navigator.vibrate?.([250, 120, 250]);
+      } catch {
+        // Vibration indisponible : sans importance.
+      }
+    }
+    etatPrecedent.current = cle;
+    document.title = `Medi24 · ${libelleEtat(suivi.etat)}`;
+  }, [suivi]);
 
   return (
     <main className="flex min-h-screen flex-col gap-5 px-5 pb-10 pt-5">
@@ -111,7 +128,7 @@ function Contenu({ jeton, suivi, rafraichir }: { jeton: string; suivi: SuiviPati
               </div>
             </div>
             <p className="text-[14px] leading-snug text-discret">
-              Gardez cette page ouverte. Vous recevrez aussi un SMS dès qu&apos;une pharmacie répond.
+              Gardez cette page ouverte : elle se met à jour toute seule et votre téléphone vibre dès qu&apos;une pharmacie répond.
             </p>
           </Carte>
           <ResumeDemande suivi={suivi} />

@@ -3,6 +3,7 @@ import { CASCADE, decider, type ActionCascade } from "@/lib/cascade";
 import type { EtatDemande } from "@/lib/etats";
 import { formaterDistance } from "@/lib/garde";
 import { smsAlertePharmacie, smsRappelPharmacie } from "@/lib/messages";
+import { options } from "@/lib/options";
 import { adresseSite } from "./http";
 import { alerterAdmin, envoyerSms } from "./sms";
 
@@ -71,7 +72,8 @@ async function executer(db: SupabaseClient, demandeId: string): Promise<void> {
     etat: demande.etat,
     ageSecondes: (Date.now() - new Date(demande.cree_le).getTime()) / 1000,
     vaguesEnvoyees: liste.reduce((m, a) => Math.max(m, a.vague), 0),
-    rappelEnvoye: demande.rappel_envoye,
+    // Rappel désactivé : on le déclare "déjà envoyé" pour que la cascade ne le déclenche jamais.
+    rappelEnvoye: demande.rappel_envoye || !options.smsRappel(),
     repliFait: demande.repli_fait,
     pharmaciesRestantes: restantes,
     sansReponse: liste.filter((a) => a.resultat === null).length,

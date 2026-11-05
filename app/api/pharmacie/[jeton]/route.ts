@@ -7,6 +7,7 @@ import { adresseSite, erreur, lireCorps, ok } from "@/lib/serveur/http";
 import { envoyerSms } from "@/lib/serveur/sms";
 import { smsLivreur, smsPatientPrete, smsPatientReponse } from "@/lib/messages";
 import { contientProduitExclu } from "@/lib/validation";
+import { options } from "@/lib/options";
 
 export const dynamic = "force-dynamic";
 
@@ -152,7 +153,7 @@ export async function POST(requete: Request, { params }: Contexte) {
       return erreur(messages[resultat.raison ?? ""] ?? "Réponse refusée.", 409);
     }
 
-    if (resultat.retenue) {
+    if (resultat.retenue && options.smsPatient()) {
       await envoyerSms(db, {
         telephone: await telephonePatient(db, demande.id),
         message: smsPatientReponse(`${site}/suivi/${demande.jeton}`),
@@ -243,7 +244,7 @@ export async function POST(requete: Request, { params }: Contexte) {
       .eq("id", demande.id)
       .eq("etat", "confirmee");
     await db.from("journal_alertes").insert({ demande_id: demande.id, evenement: "prete" });
-    await envoyerSms(db, {
+    if (options.smsPatient()) await envoyerSms(db, {
       telephone: await telephonePatient(db, demande.id),
       message: smsPatientPrete(`${site}/suivi/${demande.jeton}`),
       demandeId: demande.id,

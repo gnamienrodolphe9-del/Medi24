@@ -26,7 +26,8 @@ Dans l'éditeur SQL, exécuter dans cet ordre (`0001` et `0002` sont déjà fait
 1. `supabase/migrations/0001_schema.sql`
 2. `supabase/migrations/0002_admin_et_annuaire.sql`
 3. **`supabase/migrations/0003_demandes_et_cascade.sql`** (nouveau : cascade, réponses, indicateurs, stockage privé des ordonnances)
-4. `supabase/seed.sql` (pharmacies fictives, **jamais en production**)
+4. **`supabase/migrations/0005_admin_details.sql`** (indicateurs détaillés de l'administration)
+5. `supabase/seed.sql` (pharmacies fictives, **jamais en production**)
 
 Si Supabase affiche l'avertissement sur la sécurité (RLS) : cliquer « Exécuter et activer RLS ».
 
@@ -63,7 +64,20 @@ Pour la cascade (rappel à 2 min, vague suivante à 4 min, liste d'appel à 6 mi
 
 ## Fournisseur SMS
 
-L'application parle à un « fournisseur » par une interface unique (`lib/sms/types.ts`). Fournis : `console` (test) et `twilio`. Pour un opérateur ou agrégateur local, copier `lib/sms/twilio.ts`, adapter l'appel HTTP à sa documentation, puis l'ajouter dans `lib/sms/index.ts`. Demander des devis à plusieurs fournisseurs : les prix de l'ordre de grandeur cités pendant le cadrage sont indicatifs. Les SMS sont écrits **sans accents** exprès (160 caractères par SMS au lieu de 70).
+L'application parle à un « fournisseur » par une interface unique (`lib/sms/types.ts`). Fournis : `console` (test), `smspro` (SMS Pro Africa) et `twilio`. Pour un opérateur ou agrégateur local, copier `lib/sms/twilio.ts`, adapter l'appel HTTP à sa documentation, puis l'ajouter dans `lib/sms/index.ts`. Demander des devis à plusieurs fournisseurs : les prix de l'ordre de grandeur cités pendant le cadrage sont indicatifs. Les SMS sont écrits **sans accents** exprès (160 caractères par SMS au lieu de 70).
+
+### Maîtriser le coût des SMS
+
+Par défaut, seuls trois SMS partent : le **code de vérification**, les **alertes aux pharmacies** et le **lien du livreur**. Tout le reste se passe dans l'application : la page du patient et celle de la pharmacie se mettent à jour toutes seules, vibrent et changent de titre à chaque événement. Quatre interrupteurs (variables d'environnement, valeur `oui` ou `non`) permettent de réactiver les SMS facultatifs :
+
+| Variable | Défaut | Effet |
+| --- | --- | --- |
+| `SMS_PATIENT` | non | SMS au patient quand une pharmacie répond et quand la commande est prête |
+| `SMS_RAPPEL` | non | Rappel aux pharmacies silencieuses à 2 minutes |
+| `SMS_CONFIRMATION_PHARMACIE` | non | SMS à la pharmacie quand le patient a confirmé son choix |
+| `SMS_GARDE_SOIR` | oui | SMS de 16 h 30 pour confirmer la garde (environ 1 SMS par pharmacie et par jour) |
+
+Contrepartie : un patient ou une pharmacie qui ferme la page ne reçoit plus d'avis. Le patient retrouve sa demande depuis l'accueil (24 heures), la pharmacie rouvre le lien de l'alerte.
 
 ## Comment ça marche
 
@@ -77,6 +91,8 @@ L'application parle à un « fournisseur » par une interface unique (`lib/sms/t
 | Planning de garde, historique | `/pharmacie/gardes?j=…`, `/pharmacie/historique?j=…` | Pharmacie, lien de gestion donné par l'admin |
 | Course | `/l/[jeton]` | Livreur, par SMS |
 | Administration | `/admin/...` | Vous (compte Supabase) |
+
+Dans l'administration, **chaque indicateur est cliquable** : les tuiles ouvrent la liste détaillée (demandes, avis, journal des SMS), une demande ouvre sa fiche complète (patient, pharmacies alertées, réponses, prix, livraison, avis, chronologie), une pharmacie ouvre ses statistiques et son historique. Les listes de demandes et d'avis s'exportent en CSV **sans numéro de patient**, pour servir de preuve.
 
 Règles appliquées par le code :
 - La première réponse « disponible » ou « partiel » retient la demande, de façon atomique (une seule pharmacie). Un « partiel » peut être remplacé par un « disponible » d'une autre pharmacie dans les 3 minutes, tant que le patient n'a pas confirmé.
@@ -114,5 +130,3 @@ Règles appliquées par le code :
 - Choisir le fournisseur SMS, faire un test réel avec 2 ou 3 pharmacies amies et votre propre téléphone, sur une connexion mobile lente.
 - Supprimer les pharmacies fictives du seed.
 - Vérifier que le projet Supabase de production a une sauvegarde automatique (plan payant) ou faire un export régulier.
-#   M e d i 2 4  
- 

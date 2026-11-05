@@ -35,6 +35,8 @@ export default function CadreAdmin({
         <nav className="flex flex-wrap gap-2" aria-label="Administration">
           {[
             ["/admin/indicateurs", "Indicateurs"],
+            ["/admin/demandes", "Demandes"],
+            ["/admin/evaluations", "Avis"],
             ["/admin/pharmacies", "Pharmacies"],
             ["/admin/gardes", "Gardes"],
             ["/admin/structures", "Structures"],

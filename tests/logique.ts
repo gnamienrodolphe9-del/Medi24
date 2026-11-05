@@ -50,7 +50,7 @@ egal("trop de produits", (validerDemande({ ...bon, produits: Array.from({ length
 egal("position invalide", (validerDemande({ ...bon, latitude: 200, longitude: 0 }) as any).ok, false);
 
 // Totaux
-const L = (o: any = {}) => ({ id: "x", produit: "p", disponible: true, substitut: null, prix_fcfa: 0, substitut_accepte: null, ...o });
+const L = (o: any) => ({ id: "x", produit: "p", disponible: true, substitut: null, prix_fcfa: 0, substitut_accepte: null, ...o });
 egal("total simple", totalLignes([L({ prix_fcfa: 1000 }), L({ prix_fcfa: 500 })]), { total: 1500, prixManquant: false });
 egal("substitut refusé", totalLignes([L({ prix_fcfa: 1000 }), L({ disponible: false, substitut: "s", prix_fcfa: 700, substitut_accepte: false })]), { total: 1000, prixManquant: false });
 egal("substitut accepté", totalLignes([L({ prix_fcfa: 1000 }), L({ disponible: false, substitut: "s", prix_fcfa: 700, substitut_accepte: true })]), { total: 1700, prixManquant: false });
@@ -64,3 +64,28 @@ egal("nettoyage", M.nettoyerSms("Pharmacie d’Été"), "Pharmacie d'Ete");
 egal("code", [codeValide("0042"), codeValide("42"), codesIdentiques("1234", "1234"), codesIdentiques("1234", "1235")], [true, false, true, false]);
 egal("jeton", [jetonValide("a".repeat(48)), jetonValide("A".repeat(48)), jetonValide("abc")], [true, false, false]);
 console.log(`${ok} réussis, ${ko} échec(s)`);
+
+// --- Aides de l'administration et options SMS ---
+import { afficherTelephone, celluleCsv, ecartSecondes, formaterDuree, un } from "../lib/admin/outils";
+import { options } from "../lib/options";
+let ok2 = 0, ko2 = 0;
+function egal2(nom: string, a: unknown, b: unknown) {
+  if (JSON.stringify(a) === JSON.stringify(b)) ok2++; else { ko2++; console.log("ECHEC", nom, JSON.stringify(a), JSON.stringify(b)); }
+}
+egal2("durée s", formaterDuree(42), "42 s");
+egal2("durée min", formaterDuree(95), "1 min 35 s");
+egal2("durée h", formaterDuree(4020), "1 h 07 min");
+egal2("durée vide", formaterDuree(null), "—");
+egal2("écart", ecartSecondes("2026-11-01T10:00:00Z", "2026-11-01T10:01:30Z"), 90);
+egal2("écart nul", ecartSecondes("2026-11-01T10:00:00Z", null), null);
+egal2("téléphone", afficherTelephone("+2250700000000"), "+225 07 00 00 00 00");
+egal2("csv guillemets", celluleCsv('a"b'), '"a""b"');
+egal2("csv formule", celluleCsv("=1+1"), "\"'=1+1\"");
+egal2("un liste", un([{ a: 1 }]), { a: 1 });
+egal2("un objet", un({ a: 1 }), { a: 1 });
+egal2("un null", un(null), null);
+delete process.env.SMS_PATIENT; delete process.env.SMS_RAPPEL; delete process.env.SMS_GARDE_SOIR;
+egal2("options par défaut", [options.smsPatient(), options.smsRappel(), options.smsConfirmationPharmacie(), options.smsGardeSoir()], [false, false, false, true]);
+process.env.SMS_PATIENT = "oui"; process.env.SMS_GARDE_SOIR = "non";
+egal2("options modifiées", [options.smsPatient(), options.smsGardeSoir()], [true, false]);
+console.log(`${ok2} réussis, ${ko2} échec(s) (administration et options)`);

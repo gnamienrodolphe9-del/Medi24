@@ -6,6 +6,7 @@ import { estEnRecherche } from "@/lib/etats";
 import { erreur, lireCorps, ok, adresseSite } from "@/lib/serveur/http";
 import { envoyerSms } from "@/lib/serveur/sms";
 import { smsConfirmationPharmacie, smsLivraisonPharmacie } from "@/lib/messages";
+import { options } from "@/lib/options";
 
 export const dynamic = "force-dynamic";
 
@@ -154,7 +155,7 @@ export async function POST(requete: Request, { params }: Contexte) {
     const tel = Array.isArray(ph)
       ? (ph[0] as { telephone_alerte_1?: string } | undefined)?.telephone_alerte_1
       : (ph as { telephone_alerte_1?: string } | null)?.telephone_alerte_1;
-    if (jetonAlerte && tel) {
+    if (options.smsConfirmationPharmacie() && jetonAlerte && tel) {
       const lien = `${adresseSite()}/p/${jetonAlerte}`;
       await envoyerSms(db, {
         telephone: tel,

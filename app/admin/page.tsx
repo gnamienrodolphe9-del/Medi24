@@ -5,6 +5,8 @@ import CadreAdmin from "@/components/admin/CadreAdmin";
 
 const ENTREES = [
   ["/admin/indicateurs", "Indicateurs", "Demandes, réponses, délais, SMS, gardes de ce soir"],
+  ["/admin/demandes", "Demandes", "Toutes les demandes avec les patients, les pharmacies et la chronologie"],
+  ["/admin/evaluations", "Avis des patients", "Notes et commentaires, export CSV"],
   ["/admin/pharmacies", "Pharmacies", "Créer, valider ou suspendre une pharmacie, lien de gestion"],
   ["/admin/gardes", "Gardes", "Saisir le planning de garde (heures d'Abidjan)"],
   ["/admin/structures", "Structures de santé", "Liste affichée dans l'espace Urgence"],
