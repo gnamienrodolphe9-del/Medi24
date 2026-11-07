@@ -5,6 +5,7 @@ import { avancerCascade } from "@/lib/serveur/cascade";
 import { estEnRecherche } from "@/lib/etats";
 import { erreur, lireCorps, ok, adresseSite } from "@/lib/serveur/http";
 import { envoyerSms } from "@/lib/serveur/sms";
+import { notifier } from "@/lib/serveur/notifier";
 import { smsConfirmationPharmacie, smsLivraisonPharmacie } from "@/lib/messages";
 import { options } from "@/lib/options";
 
@@ -155,6 +156,23 @@ export async function POST(requete: Request, { params }: Contexte) {
     const tel = Array.isArray(ph)
       ? (ph[0] as { telephone_alerte_1?: string } | undefined)?.telephone_alerte_1
       : (ph as { telephone_alerte_1?: string } | null)?.telephone_alerte_1;
+    // La pharmacie est toujours prévenue par notification ; le SMS est facultatif.
+    if (jetonAlerte && demande.pharmacie_retenue_id) {
+      await notifier(
+        db,
+        { type: "pharmacie", id: demande.pharmacie_retenue_id },
+        {
+          titre: "Medi24 : le patient a confirmé",
+          corps:
+            mode === "livraison"
+              ? "Livraison demandée : indiquez votre livreur, puis préparez la commande."
+              : "Retrait demandé : préparez la commande puis touchez « Prête ».",
+          chemin: `/p/${jetonAlerte}`,
+          urgent: true,
+        },
+        { evenement: "confirmation_patient", demandeId: demande.id }
+      );
+    }
     if (options.smsConfirmationPharmacie() && jetonAlerte && tel) {
       const lien = `${adresseSite()}/p/${jetonAlerte}`;
       await envoyerSms(db, {

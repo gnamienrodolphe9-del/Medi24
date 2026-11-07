@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import QRCode from "qrcode";
 import { useCallback, useEffect, useState } from "react";
 import CadreAdmin from "@/components/admin/CadreAdmin";
 import Champ from "@/components/admin/Champ";
@@ -31,26 +32,67 @@ function versNombre(texte: string): number {
 // Lien de gestion de la pharmacie (planning de garde et historique) : à lui envoyer une fois.
 function LienGestion({ jeton }: { jeton: string }) {
   const [copie, setCopie] = useState(false);
+  const [qr, setQr] = useState(false);
+  const [image, setImage] = useState<string | null>(null);
   const adresse = `${window.location.origin}/pharmacie/gardes?j=${jeton}`;
+
+  useEffect(() => {
+    if (!qr) return;
+    let annule = false;
+    QRCode.toDataURL(adresse, { width: 480, margin: 2, errorCorrectionLevel: "M" })
+      .then((url) => {
+        if (!annule) setImage(url);
+      })
+      .catch(() => {
+        if (!annule) setImage(null);
+      });
+    return () => {
+      annule = true;
+    };
+  }, [qr, adresse]);
   return (
     <div className="flex flex-col gap-1.5 rounded-xl bg-fond p-3">
       <p className="text-[12.5px] font-semibold text-discret">Lien de gestion de la pharmacie (secret)</p>
       <p className="break-all text-[12px]">{adresse}</p>
-      <button
-        type="button"
-        onClick={async () => {
-          try {
-            await navigator.clipboard.writeText(adresse);
-            setCopie(true);
-            setTimeout(() => setCopie(false), 2000);
-          } catch {
-            window.prompt("Copiez ce lien :", adresse);
-          }
-        }}
-        className="min-h-11 self-start rounded-xl border-[1.5px] border-vert bg-white px-3.5 text-sm font-bold text-vert"
-      >
-        {copie ? "Copié ✓" : "Copier le lien"}
-      </button>
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={async () => {
+            try {
+              await navigator.clipboard.writeText(adresse);
+              setCopie(true);
+              setTimeout(() => setCopie(false), 2000);
+            } catch {
+              window.prompt("Copiez ce lien :", adresse);
+            }
+          }}
+          className="min-h-11 rounded-xl border-[1.5px] border-vert bg-white px-3.5 text-sm font-bold text-vert"
+        >
+          {copie ? "Copié ✓" : "Copier le lien"}
+        </button>
+        <button
+          type="button"
+          onClick={() => setQr((v) => !v)}
+          aria-expanded={qr}
+          className="min-h-11 rounded-xl border-[1.5px] border-vert bg-white px-3.5 text-sm font-bold text-vert"
+        >
+          {qr ? "Masquer le QR code" : "Afficher le QR code"}
+        </button>
+      </div>
+      {qr && (
+        <div className="flex flex-col items-start gap-2">
+          {image ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={image} alt="QR code du lien de gestion de la pharmacie" width={240} height={240} className="rounded-xl border-[1.5px] border-trait bg-white" />
+          ) : (
+            <p className="text-[13px] text-discret">Création du QR code…</p>
+          )}
+          <p className="text-[12.5px] leading-snug text-discret">
+            Faites-le scanner par la pharmacie : sa page s&apos;ouvre, puis « Installer et activer les alertes ».
+            Ce QR code donne accès à la pharmacie : montrez-le sur votre écran, ne l&apos;imprimez pas.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

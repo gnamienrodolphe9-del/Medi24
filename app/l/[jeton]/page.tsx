@@ -1,5 +1,6 @@
 "use client";
 
+import AssistantAlertes from "@/components/AssistantAlertes";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import CarteSimple, { type Repere } from "@/components/CarteSimple";
@@ -204,6 +205,8 @@ export default function PageLivreur() {
           )}
         </>
       )}
+
+      {vue && !vue.terminee && !vue.annulee && <AssistantAlertes genre="livreur" jeton={jeton} role="livreur" />}
     </main>
   );
 }

@@ -31,6 +31,17 @@ export default function LayoutRacine({
 }) {
   return (
     <html lang="fr" className={figtree.variable}>
+      <head>
+        {/* Garde la proposition d'installation du navigateur (envoyée une seule fois, très tôt)
+            pour que le bouton « Installer » des pages puisse l'ouvrir plus tard. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__medi24Installation=e;});" +
+              "window.addEventListener('appinstalled',function(){window.__medi24Installation=null;});",
+          }}
+        />
+      </head>
       <body className="mx-auto min-h-screen max-w-md font-sans antialiased">
         {children}
         <EnregistrementServiceWorker />

@@ -5,6 +5,7 @@ import { normaliserTelephoneCi } from "@/lib/telephone";
 import { chargerAlerte, construireVuePharmacie } from "@/lib/serveur/pharmacie";
 import { adresseSite, erreur, lireCorps, ok } from "@/lib/serveur/http";
 import { envoyerSms } from "@/lib/serveur/sms";
+import { notifier } from "@/lib/serveur/notifier";
 import { smsLivreur, smsPatientPrete, smsPatientReponse } from "@/lib/messages";
 import { contientProduitExclu } from "@/lib/validation";
 import { options } from "@/lib/options";
@@ -153,13 +154,27 @@ export async function POST(requete: Request, { params }: Contexte) {
       return erreur(messages[resultat.raison ?? ""] ?? "Réponse refusée.", 409);
     }
 
-    if (resultat.retenue && options.smsPatient()) {
-      await envoyerSms(db, {
-        telephone: await telephonePatient(db, demande.id),
-        message: smsPatientReponse(`${site}/suivi/${demande.jeton}`),
-        demandeId: demande.id,
-        evenement: "patient_reponse",
-      });
+    if (resultat.retenue) {
+      // Le patient est prévenu par notification (gratuite) ; le SMS reste facultatif.
+      await notifier(
+        db,
+        { type: "demande", id: demande.id },
+        {
+          titre: "Medi24 : une pharmacie a répondu",
+          corps: "Ouvrez la réponse pour voir le prix et choisir retrait ou livraison.",
+          chemin: `/suivi/${demande.jeton}`,
+          urgent: true,
+        },
+        { evenement: "patient_reponse", demandeId: demande.id }
+      );
+      if (options.smsPatient()) {
+        await envoyerSms(db, {
+          telephone: await telephonePatient(db, demande.id),
+          message: smsPatientReponse(`${site}/suivi/${demande.jeton}`),
+          demandeId: demande.id,
+          evenement: "patient_reponse",
+        });
+      }
     }
     return ok({ ok: true, retenue: resultat.retenue === true, raison: resultat.raison ?? null });
   }
@@ -217,8 +232,9 @@ export async function POST(requete: Request, { params }: Contexte) {
       demandeId: demande.id,
       evenement: "livreur",
     });
-    if (!envoi.reussi) return erreur("Le SMS au livreur n'a pas pu être envoyé. Vérifiez le numéro.", 502);
-    return ok();
+    // Si le SMS échoue, la course est quand même créée : la pharmacie reçoit le lien et peut
+    // l'envoyer elle-même (WhatsApp, copie).
+    return ok({ ok: true, smsEnvoye: envoi.reussi, lienLivreur: `${site}/l/${jetonLivreur}` });
   }
 
   // --- Commande prête ---
@@ -226,6 +242,7 @@ export async function POST(requete: Request, { params }: Contexte) {
     if (demande.etat !== "confirmee" || !demande.mode) {
       return erreur("Le patient n'a pas encore confirmé sa commande.");
     }
+    let livraisonPrete: { id: string; jeton: string } | null = null;
     if (demande.mode === "livraison") {
       const { data: reponse } = await db
         .from("reponses")
@@ -234,9 +251,10 @@ export async function POST(requete: Request, { params }: Contexte) {
         .eq("pharmacie_id", alerte.pharmacie_id)
         .maybeSingle<{ id: string }>();
       const { data: liv } = reponse
-        ? await db.from("livraisons").select("id").eq("reponse_id", reponse.id).maybeSingle()
+        ? await db.from("livraisons").select("id, jeton").eq("reponse_id", reponse.id).maybeSingle<{ id: string; jeton: string }>()
         : { data: null };
       if (!liv) return erreur("Indiquez d'abord le numéro du livreur.");
+      livraisonPrete = liv;
     }
     await db
       .from("demandes")
@@ -244,6 +262,33 @@ export async function POST(requete: Request, { params }: Contexte) {
       .eq("id", demande.id)
       .eq("etat", "confirmee");
     await db.from("journal_alertes").insert({ demande_id: demande.id, evenement: "prete" });
+    await notifier(
+      db,
+      { type: "demande", id: demande.id },
+      {
+        titre: "Medi24 : votre commande est prête",
+        corps:
+          demande.mode === "livraison"
+            ? "Le livreur va partir. Gardez votre code à 4 chiffres."
+            : "Venez la retirer à la pharmacie avec votre code à 4 chiffres.",
+        chemin: `/suivi/${demande.jeton}`,
+        urgent: true,
+      },
+      { evenement: "patient_prete", demandeId: demande.id }
+    );
+    if (livraisonPrete) {
+      await notifier(
+        db,
+        { type: "livraison", id: livraisonPrete.id },
+        {
+          titre: "Medi24 : commande prête",
+          corps: "La commande est prête à la pharmacie. Vous pouvez partir.",
+          chemin: `/l/${livraisonPrete.jeton}`,
+          urgent: true,
+        },
+        { evenement: "livreur_prete", demandeId: demande.id }
+      );
+    }
     if (options.smsPatient()) await envoyerSms(db, {
       telephone: await telephonePatient(db, demande.id),
       message: smsPatientPrete(`${site}/suivi/${demande.jeton}`),

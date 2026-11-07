@@ -1,5 +1,6 @@
 "use client";
 
+import AssistantAlertes from "@/components/AssistantAlertes";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -76,6 +77,9 @@ export default function PageSuivi() {
       )}
 
       {suivi && <Contenu jeton={jeton} suivi={suivi} rafraichir={rafraichir} />}
+      {suivi && !["remise", "annulee", "expiree"].includes(suivi.etat) && (
+        <AssistantAlertes genre="suivi" jeton={jeton} role="patient" />
+      )}
     </main>
   );
 }

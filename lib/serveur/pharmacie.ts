@@ -1,3 +1,4 @@
+import { adresseSite } from "./http";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { EtatDemande } from "@/lib/etats";
 import type { LigneReponse } from "@/lib/totaux";
@@ -33,7 +34,7 @@ export type VuePharmacie = {
   } | null;
   // Numéro du patient : visible seulement par la pharmacie retenue, une fois le choix fait.
   telephonePatient: string | null;
-  livraison: { telephoneLivreur: string; etat: "creee" | "parti" | "arrive" | "remis" } | null;
+  livraison: { telephoneLivreur: string; etat: "creee" | "parti" | "arrive" | "remis"; lien: string } | null;
   codeBloque: boolean;
 };
 
@@ -140,10 +141,18 @@ export async function construireVuePharmacie(
     };
     const { data: liv } = await db
       .from("livraisons")
-      .select("telephone_livreur, etat")
+      .select("telephone_livreur, etat, jeton")
       .eq("reponse_id", reponseBd.data.id)
-      .maybeSingle<{ telephone_livreur: string; etat: "creee" | "parti" | "arrive" | "remis" }>();
-    if (liv) livraison = { telephoneLivreur: liv.telephone_livreur, etat: liv.etat };
+      .maybeSingle<{ telephone_livreur: string; etat: "creee" | "parti" | "arrive" | "remis"; jeton: string }>();
+    // Le lien du livreur est donné à la pharmacie (c'est son livreur) : si le SMS n'arrive pas,
+    // elle peut le copier ou l'envoyer par WhatsApp.
+    if (liv) {
+      livraison = {
+        telephoneLivreur: liv.telephone_livreur,
+        etat: liv.etat,
+        lien: `${adresseSite()}/l/${liv.jeton}`,
+      };
+    }
   }
 
   return {

@@ -1,5 +1,6 @@
 "use client";
 
+import AssistantAlertes from "@/components/AssistantAlertes";
 import { useCallback, useEffect, useState } from "react";
 import CadrePharmacie, { useJetonGestion } from "@/components/pharmacie/CadrePharmacie";
 import { BOUTON_PRINCIPAL, Carte, Chargement, MessageErreur, Pastille } from "@/components/ui";
@@ -40,6 +41,7 @@ export default function PageGardesPharmacie() {
   return (
     <CadrePharmacie titre="Mes gardes" jeton={jeton} nomPharmacie={donnees?.pharmacie} actif="gardes">
       {erreur && <MessageErreur>{erreur}</MessageErreur>}
+      {jeton && <AssistantAlertes genre="gestion" jeton={jeton} role="pharmacie" />}
       {!donnees && !erreur && <Chargement />}
       {donnees && donnees.gardes.length === 0 && (
         <p className="text-base text-discret">Aucune garde enregistrée. Medi24 saisit votre planning de garde.</p>

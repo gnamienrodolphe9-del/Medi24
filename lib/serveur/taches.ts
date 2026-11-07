@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { avancerCascade } from "./cascade";
 import { adresseSite } from "./http";
+import { notifier } from "./notifier";
 import { alerterAdmin, envoyerSms } from "./sms";
 import { smsGardeSoir } from "@/lib/messages";
 import { options } from "@/lib/options";
@@ -29,7 +30,7 @@ export async function tacheCascade(db: SupabaseClient): Promise<{ demandes: numb
 
 // Chaque soir : demande aux pharmacies de confirmer leur garde de la nuit.
 export async function tacheGardesSoir(db: SupabaseClient): Promise<{ envoyes: number; sansNumero: number }> {
-  if (!options.smsGardeSoir()) return { envoyes: 0, sansNumero: 0 };
+  // La notification part toujours ; le SMS seulement si SMS_GARDE_SOIR n'est pas sur "non".
   const maintenant = new Date();
   const dans10h = new Date(maintenant.getTime() + 10 * 3600 * 1000);
   const { data } = await db
@@ -53,15 +54,32 @@ export async function tacheGardesSoir(db: SupabaseClient): Promise<{ envoyes: nu
     };
     const p = Array.isArray(g.pharmacies) ? g.pharmacies[0] : g.pharmacies;
     if (!p || !p.validee || p.suspendue) continue;
-    // Un seul SMS par pharmacie, même avec plusieurs gardes.
+    // Un seul message par pharmacie, même avec plusieurs gardes.
     if (!vus.has(g.pharmacie_id)) {
       vus.add(g.pharmacie_id);
-      const r = await envoyerSms(db, {
-        telephone: p.telephone_alerte_1,
-        message: smsGardeSoir(`${adresseSite()}/pharmacie/gardes?j=${p.jeton_gestion}`),
-        evenement: "garde_soir",
-      });
-      if (r.reussi) envoyes++;
+      const chemin = `/pharmacie/gardes?j=${p.jeton_gestion}`;
+      const sansSms: Promise<{ reussi: boolean }> = Promise.resolve({ reussi: false });
+      const [r, joints] = await Promise.all([
+        options.smsGardeSoir()
+          ? envoyerSms(db, {
+              telephone: p.telephone_alerte_1,
+              message: smsGardeSoir(`${adresseSite()}${chemin}`),
+              evenement: "garde_soir",
+            })
+          : sansSms,
+        notifier(
+          db,
+          { type: "pharmacie", id: g.pharmacie_id },
+          {
+            titre: "Medi24 : êtes-vous de garde ce soir ?",
+            corps: "Confirmez votre garde en un clic pour recevoir les demandes.",
+            chemin,
+            etiquette: "garde-soir",
+          },
+          { evenement: "garde_soir" }
+        ),
+      ]);
+      if (r.reussi || joints > 0) envoyes++;
     }
     await db.from("gardes").update({ rappel_envoye_le: maintenant.toISOString() }).eq("id", g.id);
   }
@@ -120,6 +138,11 @@ export async function tachePurge(db: SupabaseClient): Promise<Record<string, num
 
   // Codes de vérification de plus d'un jour.
   await db.from("verifications_telephone").delete().lt("cree_le", hier);
+
+  // Abonnements aux notifications des patients (3 jours) et des livreurs (3 jours) : leurs
+  // demandes sont terminées. Ceux des pharmacies restent tant qu'elles utilisent Medi24.
+  const il3j = new Date(Date.now() - 3 * 86400 * 1000).toISOString();
+  await db.from("abonnements_push").delete().in("cible_type", ["demande", "livraison"]).lt("cree_le", il3j);
 
   // Journal technique de plus de 180 jours.
   const il180 = new Date(Date.now() - 180 * 86400 * 1000).toISOString();

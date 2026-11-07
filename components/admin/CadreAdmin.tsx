@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useAdmin } from "@/lib/admin/useAdmin";
 
 // Cadre commun des pages d'administration : en-tête, navigation, contrôle d'accès.
@@ -13,6 +14,7 @@ export default function CadreAdmin({
   children: React.ReactNode;
 }) {
   const { etat, email, deconnexion } = useAdmin();
+  const chemin = usePathname();
 
   return (
     <main className="flex min-h-screen flex-col gap-5 px-5 pb-10 pt-5">
@@ -40,16 +42,26 @@ export default function CadreAdmin({
             ["/admin/pharmacies", "Pharmacies"],
             ["/admin/gardes", "Gardes"],
             ["/admin/structures", "Structures"],
+            ["/admin/messages", "Messages"],
             ["/admin/journal", "Journal"],
-          ].map(([adresse, libelle]) => (
-            <Link
-              key={adresse}
-              href={adresse}
-              className="inline-flex min-h-11 items-center rounded-xl bg-vert-clair px-4 text-sm font-bold text-vert-fonce"
-            >
-              {libelle}
-            </Link>
-          ))}
+          ].map(([adresse, libelle]) => {
+            // L'onglet reste actif sur ses sous-pages (par exemple le détail d'une demande).
+            const actif = chemin === adresse || (chemin?.startsWith(adresse + "/") ?? false);
+            return (
+              <Link
+                key={adresse}
+                href={adresse}
+                aria-current={actif ? "page" : undefined}
+                className={`inline-flex min-h-11 items-center rounded-xl px-4 text-sm font-bold transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vert ${
+                  actif
+                    ? "bg-vert text-white shadow-sm"
+                    : "bg-vert-clair text-vert-fonce hover:bg-vert hover:text-white active:bg-vert-fonce active:text-white"
+                }`}
+              >
+                {libelle}
+              </Link>
+            );
+          })}
         </nav>
       )}
 

@@ -21,7 +21,7 @@ import {
 
 const TYPES: { id: TypeDemande; titre: string; aide: string }[] = [
   { id: "medicament", titre: "Un médicament", aide: "Je connais le nom" },
-  { id: "ordonnance", titre: "Mon ordonnance", aide: "Je prends une photo" },
+  { id: "ordonnance", titre: "Mon ordonnance", aide: "Photo ou import" },
   { id: "symptomes", titre: "Mes symptômes", aide: "Je ne connais pas le nom" },
 ];
 
@@ -69,6 +69,8 @@ export default function FormulaireDemande() {
 
   async function choisirPhoto(evenement: React.ChangeEvent<HTMLInputElement>) {
     const fichier = evenement.target.files?.[0];
+    // Permet de choisir deux fois de suite la même photo (sinon le navigateur ne réagit pas).
+    evenement.target.value = "";
     if (!fichier) return;
     setErreur(null);
     setPreparationPhoto(true);
@@ -208,16 +210,19 @@ export default function FormulaireDemande() {
 
       {type === "ordonnance" && (
         <Carte titre="Photo de l'ordonnance">
-          <label className="flex flex-col gap-1.5 text-sm font-semibold">
-            Prenez la photo bien à plat, avec de la lumière
-            <input
-              type="file"
-              accept="image/*"
-              capture="environment"
-              onChange={choisirPhoto}
-              className="text-sm font-normal file:mr-3 file:min-h-11 file:rounded-xl file:border-0 file:bg-vert file:px-4 file:text-sm file:font-bold file:text-white"
-            />
-          </label>
+          <p className="text-sm font-semibold">Photo bien à plat, avec de la lumière</p>
+          <div className="grid grid-cols-2 gap-3">
+            {/* Deux entrées distinctes : « capture » ouvre directement l'appareil photo,
+                sans « capture » le téléphone propose la galerie et les fichiers. */}
+            <label className="flex min-h-12 cursor-pointer items-center justify-center rounded-xl bg-vert px-3 text-center text-[15px] font-bold text-white focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-vert">
+              Prendre une photo
+              <input type="file" accept="image/*" capture="environment" onChange={choisirPhoto} className="sr-only" />
+            </label>
+            <label className="flex min-h-12 cursor-pointer items-center justify-center rounded-xl border-[1.5px] border-vert bg-white px-3 text-center text-[15px] font-bold text-vert focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-vert">
+              Importer une photo
+              <input type="file" accept="image/*" onChange={choisirPhoto} className="sr-only" />
+            </label>
+          </div>
           {preparationPhoto && <p className="text-sm text-discret">Préparation de la photo…</p>}
           {apercu && (
             // eslint-disable-next-line @next/next/no-img-element

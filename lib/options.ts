@@ -23,4 +23,9 @@ export const options = {
   smsConfirmationPharmacie: () => actif("SMS_CONFIRMATION_PHARMACIE", false),
   // SMS de 16 h 30 qui demande aux pharmacies de confirmer leur garde.
   smsGardeSoir: () => actif("SMS_GARDE_SOIR", true),
+  // Mode test : réservé à vos essais, jamais pendant le vrai pilote.
+  //  - le code de vérification s'affiche à l'écran (seulement si SMS_FOURNISSEUR=console) ;
+  //  - la page Admin > Messages montre chaque SMS et chaque notification avec son lien cliquable,
+  //    sans passer par les journaux de Vercel.
+  modeTest: () => actif("MODE_TEST", false),
 };

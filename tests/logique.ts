@@ -50,7 +50,7 @@ egal("trop de produits", (validerDemande({ ...bon, produits: Array.from({ length
 egal("position invalide", (validerDemande({ ...bon, latitude: 200, longitude: 0 }) as any).ok, false);
 
 // Totaux
-const L = (o: any = {}) => ({ id: "x", produit: "p", disponible: true, substitut: null, prix_fcfa: 0, substitut_accepte: null, ...o });
+const L = (o: any) => ({ id: "x", produit: "p", disponible: true, substitut: null, prix_fcfa: 0, substitut_accepte: null, ...o });
 egal("total simple", totalLignes([L({ prix_fcfa: 1000 }), L({ prix_fcfa: 500 })]), { total: 1500, prixManquant: false });
 egal("substitut refusé", totalLignes([L({ prix_fcfa: 1000 }), L({ disponible: false, substitut: "s", prix_fcfa: 700, substitut_accepte: false })]), { total: 1000, prixManquant: false });
 egal("substitut accepté", totalLignes([L({ prix_fcfa: 1000 }), L({ disponible: false, substitut: "s", prix_fcfa: 700, substitut_accepte: true })]), { total: 1700, prixManquant: false });
@@ -89,3 +89,12 @@ egal2("options par défaut", [options.smsPatient(), options.smsRappel(), options
 process.env.SMS_PATIENT = "oui"; process.env.SMS_GARDE_SOIR = "non";
 egal2("options modifiées", [options.smsPatient(), options.smsGardeSoir()], [true, false]);
 console.log(`${ok2} réussis, ${ko2} échec(s) (administration et options)`);
+
+// --- Mode test ---
+delete process.env.MODE_TEST;
+egal2("mode test absent", options.modeTest(), false);
+process.env.MODE_TEST = "oui";
+egal2("mode test actif", options.modeTest(), true);
+process.env.MODE_TEST = "non";
+egal2("mode test coupé", options.modeTest(), false);
+console.log(`${ok2} réussis, ${ko2} échec(s) (avec le mode test)`);

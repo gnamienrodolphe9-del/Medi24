@@ -27,7 +27,8 @@ Dans l'éditeur SQL, exécuter dans cet ordre (`0001` et `0002` sont déjà fait
 2. `supabase/migrations/0002_admin_et_annuaire.sql`
 3. **`supabase/migrations/0003_demandes_et_cascade.sql`** (nouveau : cascade, réponses, indicateurs, stockage privé des ordonnances)
 4. **`supabase/migrations/0005_admin_details.sql`** (indicateurs détaillés de l'administration)
-5. `supabase/seed.sql` (pharmacies fictives, **jamais en production**)
+5. **`supabase/migrations/0006_notifications_push.sql`** (nouveau : appareils abonnés aux notifications)
+6. `supabase/seed.sql` (pharmacies fictives, **jamais en production**)
 
 Si Supabase affiche l'avertissement sur la sécurité (RLS) : cliquer « Exécuter et activer RLS ».
 
@@ -61,6 +62,38 @@ Pour la cascade (rappel à 2 min, vague suivante à 4 min, liste d'appel à 6 mi
    - 7 h 30 : rapport de la nuit (journal + SMS à `ADMIN_TELEPHONE`) ;
    - 3 h : purge (ordonnances de plus de 90 jours, positions de livreurs, codes expirés).
 5. Choisir le fournisseur de SMS (voir plus bas) et passer `SMS_FOURNISSEUR`.
+
+## Notifications push et installation de l'application
+
+En plus des SMS, la pharmacie, le patient et le livreur peuvent recevoir des **notifications** sur leur téléphone ou leur ordinateur, **même quand la page est fermée**. Elles sont gratuites, arrivent en une seconde, et s'ajoutent aux SMS : le SMS reste le filet de sécurité (téléphone en économie de batterie, sans internet, notifications coupées).
+
+**Mise en place (une seule fois)**
+
+1. Installer les nouvelles dépendances : `npm.cmd install`.
+2. Générer les clés : `npx.cmd web-push generate-vapid-keys`. Mettre la clé publique dans `NEXT_PUBLIC_VAPID_PUBLIC_KEY` et la clé privée (secrète) dans `VAPID_PRIVATE_KEY`, dans `.env.local` **et** dans Vercel. Sans ces clés, les notifications sont simplement désactivées.
+3. Exécuter `0006_notifications_push.sql` dans Supabase.
+4. Redéployer.
+
+**Ce que voit chaque personne** : un encart « Installer et activer les alertes » (page de gestion de la pharmacie, page de réponse à une alerte, suivi du patient, page du livreur). Un seul bouton propose l'installation de l'application sur l'appareil, puis demande l'autorisation des notifications. Sur iPhone, l'encart explique les trois gestes (Partager, « Sur l'écran d'accueil », puis rouvrir l'application) : les notifications n'y marchent qu'une fois l'application installée. Le bouton « Essayer » envoie une notification d'essai.
+
+**Qui est prévenu, et quand**
+
+| Événement | Notification à | SMS |
+| --- | --- | --- |
+| Nouvelle demande, rappel à 2 min | Pharmacie | Oui (alerte) ; rappel selon `SMS_RAPPEL` |
+| Garde du soir (16 h 30) | Pharmacie | Selon `SMS_GARDE_SOIR` |
+| Une pharmacie répond | Patient | Selon `SMS_PATIENT` |
+| Le patient confirme retrait ou livraison | Pharmacie | Selon `SMS_CONFIRMATION_PHARMACIE` |
+| Commande prête | Patient, et livreur si livraison | Patient selon `SMS_PATIENT` |
+| Course à faire | — (le livreur n'a pas encore ouvert son lien) | Oui |
+
+**QR code des pharmacies** : Admin, Pharmacies, « Afficher le QR code ». La pharmacie le scanne, sa page de gestion s'ouvre, elle touche « Installer et activer les alertes ». Ce QR code donne accès à la pharmacie : le montrer sur votre écran, ne pas l'imprimer.
+
+**Lien du livreur** : si le SMS n'arrive pas, la page de la pharmacie affiche le lien avec « WhatsApp » et « Copier le lien ».
+
+## Mode test (vos essais, sans les journaux de Vercel)
+
+Avec `MODE_TEST=oui` : le code de vérification s'affiche à l'écran (seulement avec `SMS_FOURNISSEUR=console`) et **Admin, Messages** liste chaque SMS et chaque notification avec son texte et son lien cliquable (« Ouvrir la page »). **À retirer avant le vrai pilote** : ce mode garde les numéros et les liens dans le journal. Avec un vrai fournisseur SMS (`smspro`), le code n'est jamais affiché à l'écran.
 
 ## Fournisseur SMS
 

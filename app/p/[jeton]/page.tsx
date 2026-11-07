@@ -1,5 +1,6 @@
 "use client";
 
+import AssistantAlertes from "@/components/AssistantAlertes";
 import { useParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -40,6 +41,7 @@ export default function PagePharmacie() {
       {statut === 404 && <MessageErreur>Ce lien n&apos;est pas valide.</MessageErreur>}
       {erreur && statut !== 404 && !vue && <MessageErreur>{erreur}</MessageErreur>}
       {vue && <Contenu jeton={jeton} vue={vue} rafraichir={rafraichir} />}
+      {vue && <AssistantAlertes genre="alerte" jeton={jeton} role="pharmacie" />}
     </main>
   );
 }
@@ -292,6 +294,28 @@ function SuiteReponse({ jeton, vue, rafraichir }: { jeton: string; vue: VuePharm
   const [message, setMessage] = useState<string | null>(null);
   const [occupe, setOccupe] = useState(false);
 
+  async function envoyerLivreur() {
+    setErreur(null);
+    setMessage(null);
+    setOccupe(true);
+    const r = await envoyerJson<{ smsEnvoye?: boolean }>(`/api/pharmacie/${jeton}`, {
+      action: "livreur",
+      telephone: telLivreur,
+    });
+    setOccupe(false);
+    if (!r.ok) {
+      setErreur(r.erreur);
+      return;
+    }
+    setMessage(
+      r.donnees.smsEnvoye === false
+        ? "Le SMS n'est pas parti. Envoyez le lien au livreur par WhatsApp (boutons ci-dessous)."
+        : "Lien envoyé au livreur par SMS."
+    );
+    setTelLivreur("");
+    await rafraichir();
+  }
+
   async function action(corps: Record<string, unknown>, succes?: string) {
     setErreur(null);
     setMessage(null);
@@ -374,12 +398,15 @@ function SuiteReponse({ jeton, vue, rafraichir }: { jeton: string; vue: VuePharm
                   </Pastille>
                 </p>
               ) : (
-                <p className="text-[15px] leading-snug text-discret">Indiquez le numéro de votre livreur : il reçoit un lien par SMS.</p>
+                <p className="text-[15px] leading-snug text-discret">Indiquez le numéro de votre livreur : il reçoit un lien par SMS (et vous pouvez aussi le lui envoyer par WhatsApp).</p>
+              )}
+              {vue.livraison && vue.livraison.etat !== "remis" && (
+                <LienLivreur lien={vue.livraison.lien} telephone={vue.livraison.telephoneLivreur} />
               )}
               {(!vue.livraison || vue.livraison.etat === "creee") && (
                 <>
                   <input type="tel" inputMode="tel" value={telLivreur} onChange={(e) => setTelLivreur(e.target.value)} placeholder="Numéro du livreur" className={CHAMP} aria-label="Numéro du livreur" />
-                  <button type="button" disabled={occupe || !telLivreur.trim()} onClick={() => action({ action: "livreur", telephone: telLivreur }, "Lien envoyé au livreur.")} className={BOUTON_SECONDAIRE}>
+                  <button type="button" disabled={occupe || !telLivreur.trim()} onClick={envoyerLivreur} className={BOUTON_SECONDAIRE}>
                     {vue.livraison ? "Changer le livreur" : "Envoyer le lien au livreur"}
                   </button>
                 </>
@@ -424,5 +451,34 @@ function SuiteReponse({ jeton, vue, rafraichir }: { jeton: string; vue: VuePharm
       {erreur && <MessageErreur>{erreur}</MessageErreur>}
       {message && <MessageInfo>{message}</MessageInfo>}
     </>
+  );
+}
+
+// Lien de la course du livreur : copie ou WhatsApp, au cas où le SMS ne lui serait pas arrivé.
+function LienLivreur({ lien, telephone }: { lien: string; telephone: string }) {
+  const [copie, setCopie] = useState(false);
+  async function copier() {
+    try {
+      await navigator.clipboard.writeText(lien);
+      setCopie(true);
+      setTimeout(() => setCopie(false), 2000);
+    } catch {
+      window.prompt("Copiez ce lien :", lien);
+    }
+  }
+  const numero = telephone.replace(/\D/g, "");
+  const texte = encodeURIComponent(`Medi24 : course a faire. Ouvrez ce lien : ${lien}`);
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="text-[13px] leading-snug text-discret">Le livreur n&apos;a pas reçu le SMS ? Envoyez-lui le lien :</p>
+      <div className="grid grid-cols-2 gap-3">
+        <a href={`https://wa.me/${numero}?text=${texte}`} target="_blank" rel="noopener noreferrer" className={BOUTON_SECONDAIRE}>
+          WhatsApp
+        </a>
+        <button type="button" onClick={copier} className={BOUTON_SECONDAIRE}>
+          {copie ? "Copié ✓" : "Copier le lien"}
+        </button>
+      </div>
+    </div>
   );
 }

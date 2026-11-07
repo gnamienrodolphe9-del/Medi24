@@ -5,6 +5,7 @@ import { formaterDistance } from "@/lib/garde";
 import { smsAlertePharmacie, smsRappelPharmacie } from "@/lib/messages";
 import { options } from "@/lib/options";
 import { adresseSite } from "./http";
+import { notifier } from "./notifier";
 import { alerterAdmin, envoyerSms } from "./sms";
 
 type LigneDemandeBd = {
@@ -72,8 +73,9 @@ async function executer(db: SupabaseClient, demandeId: string): Promise<void> {
     etat: demande.etat,
     ageSecondes: (Date.now() - new Date(demande.cree_le).getTime()) / 1000,
     vaguesEnvoyees: liste.reduce((m, a) => Math.max(m, a.vague), 0),
-    // Rappel désactivé : on le déclare "déjà envoyé" pour que la cascade ne le déclenche jamais.
-    rappelEnvoye: demande.rappel_envoye || !options.smsRappel(),
+    // Le rappel part toujours en notification (gratuite) ; le SMS de rappel est facultatif
+    // (SMS_RAPPEL), voir plus bas.
+    rappelEnvoye: demande.rappel_envoye,
     repliFait: demande.repli_fait,
     pharmaciesRestantes: restantes,
     sansReponse: liste.filter((a) => a.resultat === null).length,
@@ -132,32 +134,52 @@ async function appliquer(
   if (action.type === "rappel") {
     const aRappeler = alertesExistantes.filter((a) => a.resultat === null).slice(0, action.nombre);
     let envoyes = 0;
+    let notifications = 0;
     for (const a of aRappeler) {
       const { data: alerte } = await db
         .from("alertes")
-        .select("jeton, pharmacies(telephone_alerte_1)")
+        .select("jeton, pharmacie_id, pharmacies(telephone_alerte_1)")
         .eq("id", a.id)
         .maybeSingle();
-      const jeton = (alerte as { jeton?: string } | null)?.jeton;
-      const pharma = (alerte as { pharmacies?: unknown } | null)?.pharmacies;
+      const ligne = alerte as { jeton?: string; pharmacie_id?: string; pharmacies?: unknown } | null;
+      const jeton = ligne?.jeton;
+      const pharma = ligne?.pharmacies;
       const telephone = Array.isArray(pharma)
         ? (pharma[0] as { telephone_alerte_1?: string } | undefined)?.telephone_alerte_1
         : (pharma as { telephone_alerte_1?: string } | null)?.telephone_alerte_1;
-      if (!jeton || !telephone) continue;
-      const r = await envoyerSms(db, {
-        telephone,
-        message: smsRappelPharmacie(`${site}/p/${jeton}`),
-        demandeId: demande.id,
-        evenement: "rappel",
-      });
-      if (r.reussi) envoyes++;
+      if (!jeton) continue;
+
+      if (ligne?.pharmacie_id) {
+        const joints = await notifier(
+          db,
+          { type: "pharmacie", id: ligne.pharmacie_id },
+          {
+            titre: "Medi24 RAPPEL : un patient attend",
+            corps: "Une demande attend votre réponse. Répondez en un clic.",
+            chemin: `/p/${jeton}`,
+            etiquette: `alerte-${a.id}`,
+            urgent: true,
+          },
+          { evenement: "rappel", demandeId: demande.id }
+        );
+        notifications += joints;
+      }
+      if (options.smsRappel() && telephone) {
+        const r = await envoyerSms(db, {
+          telephone,
+          message: smsRappelPharmacie(`${site}/p/${jeton}`),
+          demandeId: demande.id,
+          evenement: "rappel",
+        });
+        if (r.reussi) envoyes++;
+      }
       await db.from("alertes").update({ rappel_le: new Date().toISOString() }).eq("id", a.id);
     }
     await db.from("demandes").update({ rappel_envoye: true }).eq("id", demande.id);
     await db.from("journal_alertes").insert({
       demande_id: demande.id,
       evenement: "rappel",
-      detail: { envoyes },
+      detail: { envoyes, notifications },
     });
     return envoyes;
   }
@@ -169,6 +191,7 @@ async function appliquer(
   });
   const candidats = (candidatsBrut ?? []) as CandidatBd[];
   let envoyes = 0;
+  let smsEnvoyes = 0;
   let echecs = 0;
 
   for (const c of candidats) {
@@ -182,13 +205,33 @@ async function appliquer(
       continue;
     }
 
-    const message = smsAlertePharmacie(`${site}/p/${alerte.jeton}`, formaterDistance(c.distance_m));
-    let resultat = await envoyerSms(db, {
-      telephone: c.telephone_alerte_1,
-      message,
-      demandeId: demande.id,
-      evenement: "alerte",
-    });
+    const distance = formaterDistance(c.distance_m);
+    const message = smsAlertePharmacie(`${site}/p/${alerte.jeton}`, distance);
+    // Notification et SMS partent en même temps : la notification arrive en une seconde,
+    // le SMS est le filet de sécurité (téléphone en économie de batterie, sans internet…).
+    const [premier, joints] = await Promise.all([
+      envoyerSms(db, {
+        telephone: c.telephone_alerte_1,
+        message,
+        demandeId: demande.id,
+        evenement: "alerte",
+      }),
+      notifier(
+        db,
+        { type: "pharmacie", id: c.id },
+        {
+          titre: "Medi24 : nouvelle demande",
+          corps: distance
+            ? `Un patient cherche un médicament (à ${distance}). Répondez en un clic.`
+            : "Un patient cherche un médicament. Répondez en un clic.",
+          chemin: `/p/${alerte.jeton}`,
+          etiquette: `alerte-${alerte.id}`,
+          urgent: true,
+        },
+        { evenement: "alerte", demandeId: demande.id }
+      ),
+    ]);
+    let resultat = premier;
     // Numéro principal en échec : on essaie le numéro de secours.
     if (!resultat.reussi && c.telephone_alerte_2) {
       resultat = await envoyerSms(db, {
@@ -198,8 +241,10 @@ async function appliquer(
         evenement: "alerte_secours",
       });
     }
+    if (resultat.reussi) smsEnvoyes++;
 
-    if (resultat.reussi) {
+    // L'alerte compte comme envoyée si le SMS OU la notification est parti.
+    if (resultat.reussi || joints > 0) {
       envoyes++;
       await db
         .from("alertes")
@@ -236,7 +281,7 @@ async function appliquer(
     await alerterAdmin(db, "envoi des SMS impossible, verifiez le fournisseur SMS", demande.id);
   }
 
-  return envoyes;
+  return smsEnvoyes;
 }
 
 export { CASCADE };

@@ -1,6 +1,7 @@
 import { createHash, randomInt } from "crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { smsCodeVerification } from "@/lib/messages";
+import { options } from "@/lib/options";
 import { envoyerSms } from "./sms";
 
 const VALIDITE_MINUTES = 10;
@@ -56,8 +57,11 @@ export async function envoyerCodeVerification(
     };
   }
 
-  // En développement uniquement, on renvoie le code à l'écran pour tester sans SMS réel.
-  const dev = process.env.NODE_ENV === "development" && (process.env.SMS_FOURNISSEUR ?? "console") === "console";
+  // Pour tester sans SMS réel, on renvoie le code à l'écran : en développement local, ou en
+  // MODE_TEST (essais en ligne). Jamais avec un vrai fournisseur de SMS : le code doit alors
+  // rester sur le téléphone du patient, sinon la vérification du numéro ne sert à rien.
+  const sansSmsReel = (process.env.SMS_FOURNISSEUR ?? "console") === "console";
+  const dev = sansSmsReel && (process.env.NODE_ENV === "development" || options.modeTest());
   return dev ? { ok: true, codeDev: code } : { ok: true };
 }
 
