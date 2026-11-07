@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { BOUTON_PRINCIPAL, BOUTON_SECONDAIRE, Carte } from "@/components/ui";
-import { associerManifeste, useInstallation } from "@/lib/client/installation";
+import { useInstallation } from "@/lib/client/installation";
 import {
   activerPush,
   desactiverPush,
@@ -20,7 +20,7 @@ const TEXTES: Record<Role, { titre: string; explication: string }> = {
   pharmacie: {
     titre: "Recevoir les demandes sur cet appareil",
     explication:
-      "Installez Medi24 et activez les alertes : chaque demande de patient sonne ici, même quand la page est fermée. Le SMS part aussi, en secours.",
+      "Deux étapes, une seule fois : installer Medi24, puis activer les alertes. Chaque demande de patient arrive alors sur cette page, avec une notification qui sonne même écran verrouillé. Le SMS part en même temps, en secours.",
   },
   patient: {
     titre: "Être prévenu dès qu'une pharmacie répond",
@@ -48,12 +48,9 @@ export default function AssistantAlertes({
   const installation = useInstallation();
   const [push, setPush] = useState<EtatPush>("inconnu");
   const [occupe, setOccupe] = useState(false);
+  const [aideInstallation, setAideInstallation] = useState(false);
   const [message, setMessage] = useState<{ ton: "info" | "erreur"; texte: string } | null>(null);
-
-  // L'icône installée doit rouvrir la page de cette personne (avec son jeton).
-  useEffect(() => {
-    associerManifeste();
-  }, []);
+  const cles = pushConfigure();
 
   useEffect(() => {
     let annule = false;
@@ -67,17 +64,28 @@ export default function AssistantAlertes({
     };
   }, [genre, jeton]);
 
-  // Les clés des notifications ne sont pas configurées sur ce site : l'assistant reste caché.
-  if (!pushConfigure() || !installation.pret) return null;
+  if (!installation.pret) return null;
 
-  const { installee, installable, ios } = installation;
+  const { installee, installable, ios, android, integre } = installation;
   const texte = TEXTES[role];
+  const alertesActives = push === "actif";
+  // Rien à faire : on réduit l'encart à une ligne de confirmation.
+  const toutEstPret = installee && alertesActives;
 
-  async function lancer() {
+  async function installerApp() {
+    setMessage(null);
+    if (installable) {
+      const r = await installation.installer();
+      // Le navigateur n'a pas ouvert sa fenêtre : on montre comment installer à la main.
+      if (r === "indisponible") setAideInstallation(true);
+    } else {
+      setAideInstallation(true);
+    }
+  }
+
+  async function activer() {
     setOccupe(true);
     setMessage(null);
-    // Si le navigateur propose l'installation, on la présente d'abord, puis on active les alertes.
-    if (!installee && installable) await installation.installer();
     const r = await activerPush(genre, jeton);
     if (r.ok) {
       setPush("actif");
@@ -104,80 +112,117 @@ export default function AssistantAlertes({
     setOccupe(false);
   }
 
-  const alertesActives = push === "actif";
-  // Sur iPhone, les notifications ne fonctionnent qu'une fois l'application installée.
-  const iosAInstaller = ios && !installee && !alertesActives;
-
   return (
-    <Carte titre={alertesActives && installee ? "Alertes activées sur cet appareil" : texte.titre}>
-      {!(alertesActives && installee) && (
-        <p className="text-[15px] leading-snug text-discret">{texte.explication}</p>
-      )}
+    <Carte titre={toutEstPret ? "Alertes activées sur cet appareil" : texte.titre}>
+      {!toutEstPret && <p className="text-[15px] leading-snug text-discret">{texte.explication}</p>}
 
-      <ul className="flex flex-col gap-1.5 text-[15px] font-semibold" aria-label="État de cet appareil">
-        <li className={installee ? "text-vert-fonce" : "text-discret"}>
-          {installee ? "✓ Application installée" : "○ Application pas encore installée"}
-        </li>
-        <li className={alertesActives ? "text-vert-fonce" : push === "bloque" ? "text-rouge" : "text-discret"}>
+      {/* ÉTAPE 1 : installer l'application */}
+      <div className="flex flex-col gap-2">
+        <p className={`text-[15px] font-bold ${installee ? "text-vert-fonce" : ""}`}>
+          {installee ? "✓ 1. Application installée" : "1. Installer l'application"}
+        </p>
+
+        {!installee && integre && (
+          <p className="rounded-xl bg-ambre p-3 text-sm font-semibold leading-snug text-ambre-fonce">
+            Vous êtes dans le navigateur d&apos;une autre application. Ouvrez ce lien dans <strong>Chrome</strong> (menu ⋮,
+            puis « Ouvrir dans le navigateur ») pour pouvoir installer Medi24.
+          </p>
+        )}
+
+        {!installee && ios && (
+          <ol className="flex list-decimal flex-col gap-1.5 pl-5 text-[15px] leading-snug">
+            <li>
+              Touchez le bouton <strong>Partager</strong> (le carré avec une flèche) en bas de Safari.
+            </li>
+            <li>
+              Choisissez <strong>« Sur l&apos;écran d&apos;accueil »</strong>, puis <strong>Ajouter</strong>.
+            </li>
+            <li>
+              Ouvrez <strong>Medi24</strong> depuis votre écran d&apos;accueil : l&apos;étape 2 s&apos;y active.
+            </li>
+          </ol>
+        )}
+
+        {!installee && !ios && (
+          <button type="button" onClick={installerApp} className={BOUTON_PRINCIPAL}>
+            Installer l&apos;application
+          </button>
+        )}
+
+        {!installee && !ios && (aideInstallation || !installable) && (
+          <div className="rounded-xl bg-fond p-3 text-[14px] leading-snug">
+            <p className="font-bold">
+              {installable ? "Si rien ne s'ouvre, installez à la main :" : "Installez à la main :"}
+            </p>
+            {android ? (
+              <p className="mt-1">
+                Touchez les trois points <strong>⋮</strong> en haut à droite de Chrome, puis{" "}
+                <strong>« Installer l&apos;application »</strong> (ou « Ajouter à l&apos;écran d&apos;accueil »).
+              </p>
+            ) : (
+              <p className="mt-1">
+                Sur ordinateur (Chrome ou Edge) : cliquez sur l&apos;icône d&apos;installation à droite de la barre d&apos;adresse
+                (un écran avec une flèche), ou sur le menu <strong>⋮</strong>, puis <strong>« Installer Medi24 »</strong>.
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ÉTAPE 2 : activer les alertes */}
+      <div className="flex flex-col gap-2">
+        <p
+          className={`text-[15px] font-bold ${alertesActives ? "text-vert-fonce" : push === "bloque" ? "text-rouge" : ""}`}
+        >
           {alertesActives
-            ? "✓ Alertes activées"
+            ? "✓ 2. Alertes activées"
             : push === "bloque"
-              ? "✕ Alertes bloquées dans le navigateur"
-              : "○ Alertes pas encore activées"}
-        </li>
-      </ul>
-
-      {iosAInstaller && (
-        <ol className="flex list-decimal flex-col gap-1.5 pl-5 text-[15px] leading-snug">
-          <li>
-            Touchez le bouton <strong>Partager</strong> (le carré avec une flèche) en bas de Safari.
-          </li>
-          <li>
-            Choisissez <strong>« Sur l&apos;écran d&apos;accueil »</strong>, puis <strong>Ajouter</strong>.
-          </li>
-          <li>
-            Ouvrez <strong>Medi24</strong> depuis votre écran d&apos;accueil, puis touchez{" "}
-            <strong>« Activer les alertes »</strong>.
-          </li>
-        </ol>
-      )}
-
-      {push === "bloque" && (
-        <p className="text-[14px] leading-snug text-discret">
-          Pour les débloquer : touchez le cadenas à côté de l&apos;adresse du site, ouvrez « Notifications » et choisissez
-          « Autoriser ». Puis rechargez la page.
+              ? "✕ 2. Alertes bloquées dans le navigateur"
+              : "2. Activer les alertes"}
         </p>
-      )}
 
-      {!alertesActives && !iosAInstaller && push !== "bloque" && (
-        <button type="button" onClick={lancer} disabled={occupe} className={BOUTON_PRINCIPAL}>
-          {occupe ? "Un instant…" : !installee && installable ? "Installer et activer les alertes" : "Activer les alertes"}
-        </button>
-      )}
+        {!cles && (
+          <p className="text-[13px] leading-snug text-discret">
+            Les notifications ne sont pas encore configurées sur ce site (clés manquantes). Vous pouvez quand même
+            installer l&apos;application.
+          </p>
+        )}
 
-      {!installee && !installable && !ios && (
-        <p className="text-[13px] leading-snug text-discret">
-          Pour installer l&apos;application : ouvrez le menu du navigateur (⋮ ou ⋯), puis « Installer l&apos;application »
-          ou « Ajouter à l&apos;écran d&apos;accueil ».
-        </p>
-      )}
+        {cles && push === "bloque" && (
+          <p className="text-[14px] leading-snug text-discret">
+            Pour les débloquer : touchez le cadenas à côté de l&apos;adresse du site, ouvrez « Notifications » et choisissez
+            « Autoriser ». Puis rechargez la page.
+          </p>
+        )}
 
-      {!installee && installable && alertesActives && (
-        <button type="button" onClick={() => installation.installer()} className={BOUTON_SECONDAIRE}>
-          Installer l&apos;application
-        </button>
-      )}
+        {cles && ios && !installee && !alertesActives && (
+          <p className="text-[13px] leading-snug text-discret">
+            Sur iPhone, les alertes ne s&apos;activent qu&apos;après l&apos;installation (étape 1).
+          </p>
+        )}
 
-      {alertesActives && (
-        <div className="grid grid-cols-2 gap-3">
-          <button type="button" onClick={essayer} disabled={occupe} className={BOUTON_SECONDAIRE}>
-            Essayer
+        {cles && !alertesActives && push !== "bloque" && !(ios && !installee) && (
+          <button
+            type="button"
+            onClick={activer}
+            disabled={occupe}
+            className={installee || ios ? BOUTON_PRINCIPAL : BOUTON_SECONDAIRE}
+          >
+            {occupe ? "Un instant…" : "Activer les alertes"}
           </button>
-          <button type="button" onClick={desactiver} disabled={occupe} className={BOUTON_SECONDAIRE}>
-            Désactiver
-          </button>
-        </div>
-      )}
+        )}
+
+        {alertesActives && (
+          <div className="grid grid-cols-2 gap-3">
+            <button type="button" onClick={essayer} disabled={occupe} className={BOUTON_SECONDAIRE}>
+              Essayer
+            </button>
+            <button type="button" onClick={desactiver} disabled={occupe} className={BOUTON_SECONDAIRE}>
+              Désactiver
+            </button>
+          </div>
+        )}
+      </div>
 
       {message && (
         <p

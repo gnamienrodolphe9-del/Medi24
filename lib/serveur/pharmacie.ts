@@ -7,6 +7,8 @@ import type { LigneReponse } from "@/lib/totaux";
 export type VuePharmacie = {
   expire: boolean;
   pharmacie: { nom: string };
+  // Retour à l'espace de la pharmacie (page de gestion), pour traiter les demandes à la suite.
+  lienGestion: string;
   demande: {
     type: "medicament" | "ordonnance" | "symptomes";
     etat: EtatDemande;
@@ -79,7 +81,7 @@ export async function construireVuePharmacie(
   alerte: AlerteBd
 ): Promise<VuePharmacie | null> {
   const [{ data: ph }, { data: d }] = await Promise.all([
-    db.from("pharmacies").select("nom").eq("id", alerte.pharmacie_id).maybeSingle<{ nom: string }>(),
+    db.from("pharmacies").select("nom, jeton_gestion").eq("id", alerte.pharmacie_id).maybeSingle<{ nom: string; jeton_gestion: string }>(),
     db
       .from("demandes")
       .select(
@@ -158,6 +160,7 @@ export async function construireVuePharmacie(
   return {
     expire,
     pharmacie: { nom: ph.nom },
+    lienGestion: `/pharmacie/gardes?j=${ph.jeton_gestion}`,
     demande: {
       type: d.type,
       etat: d.etat,

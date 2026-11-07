@@ -28,7 +28,9 @@ Dans l'éditeur SQL, exécuter dans cet ordre (`0001` et `0002` sont déjà fait
 3. **`supabase/migrations/0003_demandes_et_cascade.sql`** (nouveau : cascade, réponses, indicateurs, stockage privé des ordonnances)
 4. **`supabase/migrations/0005_admin_details.sql`** (indicateurs détaillés de l'administration)
 5. **`supabase/migrations/0006_notifications_push.sql`** (nouveau : appareils abonnés aux notifications)
-6. `supabase/seed.sql` (pharmacies fictives, **jamais en production**)
+6. **`supabase/migrations/0007_appareils_push_admin.sql`** (nouveau : l'admin voit les appareils abonnés)
+7. **`supabase/migrations/0008_service_de_jour.sql`** (nouveau : demandes aussi en journée)
+8. `supabase/seed.sql` (pharmacies fictives, **jamais en production**)
 
 Si Supabase affiche l'avertissement sur la sécurité (RLS) : cliquer « Exécuter et activer RLS ».
 
@@ -90,6 +92,17 @@ En plus des SMS, la pharmacie, le patient et le livreur peuvent recevoir des **n
 **QR code des pharmacies** : Admin, Pharmacies, « Afficher le QR code ». La pharmacie le scanne, sa page de gestion s'ouvre, elle touche « Installer et activer les alertes ». Ce QR code donne accès à la pharmacie : le montrer sur votre écran, ne pas l'imprimer.
 
 **Lien du livreur** : si le SMS n'arrive pas, la page de la pharmacie affiche le lien avec « WhatsApp » et « Copier le lien ».
+
+## Espace de la pharmacie et demandes en journée
+
+**Mon espace** (`/pharmacie/gardes?j=...`, ouvert par le QR code) est la seule page dont la pharmacie a besoin :
+
+1. un encart « Installer, puis activer les alertes » (une seule fois) ;
+2. les **demandes des patients**, qui arrivent toutes seules (relecture toutes les 5 secondes, bip et vibration à chaque nouvelle demande, compteur dans le titre de l'onglet) avec un bouton « Répondre » ; la notification et le SMS partent en même temps, pour le cas où l'écran est verrouillé ;
+3. l'interrupteur **Demandes en journée** ;
+4. ses gardes (confirmation).
+
+**Demandes en journée** (migration `0008`) : en plus des pharmacies de garde, toute pharmacie validée reçoit les demandes de **7 h à 20 h** (heure d'Abidjan), même sans garde enregistrée. Elle peut se mettre en pause depuis « Mon espace ». Les gardes de nuit et le SMS de 16 h 30 ne changent pas. Pour changer les horaires d'une pharmacie, dans Supabase : `update pharmacies set jour_debut = '08:00', jour_fin = '19:00' where nom = '...';`. Pour désactiver le service de jour partout : `update pharmacies set service_jour = false;`.
 
 ## Mode test (vos essais, sans les journaux de Vercel)
 

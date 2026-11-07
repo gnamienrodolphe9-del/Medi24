@@ -26,6 +26,9 @@ export type EtatInstallation = {
   installable: boolean;
   // iPhone ou iPad : installation manuelle par le menu Partager.
   ios: boolean;
+  android: boolean;
+  // Navigateur intégré à une application (Facebook, Instagram…) : il ne sait pas installer.
+  integre: boolean;
   // Premier rendu pas encore terminé : ne rien afficher pour éviter un clignotement.
   pret: boolean;
 };
@@ -48,6 +51,8 @@ export function useInstallation() {
     installee: false,
     installable: false,
     ios: false,
+    android: false,
+    integre: false,
     pret: false,
   });
 
@@ -57,6 +62,8 @@ export function useInstallation() {
         installee: estInstallee(),
         installable: !!window.__medi24Installation,
         ios: estIos(),
+        android: /android/i.test(navigator.userAgent),
+        integre: /; wv\)|FBAN|FBAV|Instagram|Line\//i.test(navigator.userAgent),
         pret: true,
       });
     relire();
@@ -95,18 +102,4 @@ export function useInstallation() {
   }, []);
 
   return { ...etat, installer };
-}
-
-// Associe le manifeste au lien de la page, pour que l'icône installée rouvre la bonne page
-// (voir app/api/manifeste/route.ts) : la pharmacie retrouve sa page de gestion, le patient son
-// suivi, le livreur sa course. À appeler sur les pages qui portent un jeton.
-export function associerManifeste(): void {
-  try {
-    const lien = document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
-    if (!lien) return;
-    const depart = window.location.pathname + window.location.search;
-    lien.href = `/api/manifeste?d=${encodeURIComponent(depart)}`;
-  } catch {
-    // Sans importance : l'installation fonctionne quand même avec le manifeste par défaut.
-  }
 }

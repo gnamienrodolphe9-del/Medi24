@@ -29,6 +29,9 @@ export type PharmacieAdmin = {
   latitude: number;
   longitude: number;
   jeton_gestion: string;
+  service_jour: boolean;
+  jour_debut: string;
+  jour_fin: string;
 };
 
 export type GardeAdmin = {

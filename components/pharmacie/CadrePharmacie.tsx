@@ -42,7 +42,7 @@ export default function CadrePharmacie({
         <nav className="grid grid-cols-2 gap-2" aria-label="Navigation pharmacie">
           <Link href={`/pharmacie/gardes?j=${jeton}`} aria-current={actif === "gardes" ? "page" : undefined}
             className={`flex min-h-11 items-center justify-center rounded-xl text-sm font-bold ${actif === "gardes" ? "bg-vert text-white" : "bg-vert-clair text-vert-fonce"}`}>
-            Mes gardes
+            Mon espace
           </Link>
           <Link href={`/pharmacie/historique?j=${jeton}`} aria-current={actif === "historique" ? "page" : undefined}
             className={`flex min-h-11 items-center justify-center rounded-xl text-sm font-bold ${actif === "historique" ? "bg-vert text-white" : "bg-vert-clair text-vert-fonce"}`}>

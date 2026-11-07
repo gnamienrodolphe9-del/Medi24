@@ -1,6 +1,7 @@
 "use client";
 
 import AssistantAlertes from "@/components/AssistantAlertes";
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -36,6 +37,12 @@ export default function PagePharmacie() {
         </span>
         <span className="text-[22px] font-extrabold tracking-tight">Medi24 · Pharmacie</span>
       </header>
+
+      {vue?.lienGestion && (
+        <Link href={vue.lienGestion} className="inline-flex min-h-11 items-center self-start text-[15px] font-bold text-vert underline">
+          ← Mon espace (toutes les demandes)
+        </Link>
+      )}
 
       {chargement && <Chargement />}
       {statut === 404 && <MessageErreur>Ce lien n&apos;est pas valide.</MessageErreur>}

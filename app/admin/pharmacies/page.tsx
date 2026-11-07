@@ -104,6 +104,7 @@ function ContenuPharmacies() {
   const [erreur, setErreur] = useState<string | null>(null);
   const [succes, setSucces] = useState<string | null>(null);
   const [enCours, setEnCours] = useState(false);
+  const [appareils, setAppareils] = useState<Record<string, number>>({});
 
   const charger = useCallback(async () => {
     const supabase = creerClientNavigateur();
@@ -113,6 +114,13 @@ function ContenuPharmacies() {
     } else {
       setPharmacies((data ?? []) as PharmacieAdmin[]);
     }
+    // Appareils abonnés aux notifications (absent tant que 0007 n'est pas exécuté : sans gravité).
+    const { data: appareilsBd } = await supabase.rpc("admin_appareils_push");
+    const table: Record<string, number> = {};
+    for (const ligne of (appareilsBd ?? []) as { pharmacie_id: string; appareils: number }[]) {
+      table[ligne.pharmacie_id] = Number(ligne.appareils);
+    }
+    setAppareils(table);
     setChargement(false);
   }, []);
 
@@ -364,6 +372,18 @@ function ContenuPharmacies() {
                 <dt className="text-discret">N° d&apos;ordre</dt>
                 <dd className="font-semibold">{p.numero_ordre ?? "—"}</dd>
               </dl>
+
+              <p className="text-[13px] leading-snug text-discret">
+                {appareils[p.id]
+                  ? `Notifications : ${appareils[p.id]} appareil${appareils[p.id] > 1 ? "s" : ""} abonné${appareils[p.id] > 1 ? "s" : ""}.`
+                  : "Notifications : aucun appareil abonné (la pharmacie n'a pas encore activé les alertes)."}
+                {" "}
+                {p.service_jour === undefined
+                  ? ""
+                  : p.service_jour
+                    ? `Service de jour : oui (${p.jour_debut}–${p.jour_fin}).`
+                    : "Service de jour : en pause."}
+              </p>
 
               <LienGestion jeton={p.jeton_gestion} />
 
