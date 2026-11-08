@@ -85,7 +85,8 @@ export async function envoyerPush(
         } catch (e) {
           const statut = (e as { statusCode?: number }).statusCode;
           // 404 / 410 : l'appareil s'est désabonné ou l'abonnement a expiré.
-          if (statut === 404 || statut === 410) aSupprimer.push(a.id);
+          // 401 / 403 : abonnement créé avec d'anciennes clés (clés régénérées), inutilisable.
+          if (statut === 404 || statut === 410 || statut === 401 || statut === 403) aSupprimer.push(a.id);
         }
       })
     );

@@ -32,6 +32,15 @@ function cleEnOctets(base64: string) {
   return octets;
 }
 
+// Un abonnement créé avec une ANCIENNE clé (clés régénérées) ne fonctionne plus : il faut le refaire.
+function memeCle(abonnement: PushSubscription, base64: string): boolean {
+  const recue = abonnement.options?.applicationServerKey;
+  if (!recue) return false;
+  const a = new Uint8Array(recue);
+  const b = cleEnOctets(base64);
+  return a.length === b.length && a.every((v, i) => v === b[i]);
+}
+
 async function enregistrement(): Promise<ServiceWorkerRegistration> {
   // En production le service worker est déjà enregistré par le site ; en développement local
   // on l'enregistre ici pour pouvoir tester les notifications.
@@ -48,7 +57,7 @@ export async function lireEtatPush(): Promise<EtatPush> {
   try {
     const reg = await navigator.serviceWorker.getRegistration("/");
     const abonnement = await reg?.pushManager.getSubscription();
-    return abonnement ? "actif" : "inactif";
+    return abonnement && memeCle(abonnement, CLE_PUBLIQUE) ? "actif" : "inactif";
   } catch {
     return "inactif";
   }
@@ -72,8 +81,13 @@ export async function activerPush(
       };
     }
     const reg = await enregistrement();
-    const abonnement =
-      (await reg.pushManager.getSubscription()) ??
+    let abonnement = await reg.pushManager.getSubscription();
+    if (abonnement && !memeCle(abonnement, CLE_PUBLIQUE)) {
+      await abonnement.unsubscribe();
+      abonnement = null;
+    }
+    abonnement =
+      abonnement ??
       (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: cleEnOctets(CLE_PUBLIQUE) }));
     const r = await envoyerJson("/api/push", { action: "abonner", genre, jeton, abonnement: abonnement.toJSON() });
     if (!r.ok) return { ok: false, raison: "erreur", message: r.erreur };
@@ -89,7 +103,7 @@ export async function rafraichirAbonnement(genre: GenrePage, jeton: string): Pro
     if (!pushConfigure() || !pushSupporte() || Notification.permission !== "granted") return;
     const reg = await navigator.serviceWorker.getRegistration("/");
     const abonnement = await reg?.pushManager.getSubscription();
-    if (!abonnement) return;
+    if (!abonnement || !memeCle(abonnement, CLE_PUBLIQUE)) return;
     await envoyerJson("/api/push", { action: "abonner", genre, jeton, abonnement: abonnement.toJSON() });
   } catch {
     // Sans importance.
