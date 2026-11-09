@@ -100,9 +100,21 @@ En plus des SMS, la pharmacie, le patient et le livreur peuvent recevoir des **n
 1. un encart « Installer, puis activer les alertes » (une seule fois) ;
 2. les **demandes des patients**, qui arrivent toutes seules (relecture toutes les 5 secondes, bip et vibration à chaque nouvelle demande, compteur dans le titre de l'onglet) avec un bouton « Répondre » ; la notification et le SMS partent en même temps, pour le cas où l'écran est verrouillé ;
 3. l'interrupteur **Demandes en journée** ;
+   (une pharmacie peut avoir **plusieurs demandes en même temps** : chacune a sa carte et sa notification, la plus ancienne en premier) ;
 4. ses gardes (confirmation).
 
 **Demandes en journée** (migration `0008`) : en plus des pharmacies de garde, toute pharmacie validée reçoit les demandes de **7 h à 20 h** (heure d'Abidjan), même sans garde enregistrée. Elle peut se mettre en pause depuis « Mon espace ». Les gardes de nuit et le SMS de 16 h 30 ne changent pas. Pour changer les horaires d'une pharmacie, dans Supabase : `update pharmacies set jour_debut = '08:00', jour_fin = '19:00' where nom = '...';`. Pour désactiver le service de jour partout : `update pharmacies set service_jour = false;`.
+
+## Changer les couleurs de chaque espace
+
+Tout se règle dans **`app/globals.css`** (aucun autre fichier à toucher) :
+
+1. **Espace patient** (accueil, demande, suivi, urgence, avis) : le bloc `@theme` en haut. Changez la valeur d'une couleur, par exemple `--color-vert: #0a6847;`.
+2. **Pharmacie, livreur, admin** : plus bas, section « COULEURS PAR ESPACE ». Chaque espace a son bloc (`[data-espace="pharmacie"]`, `"livreur"`, `"admin"`) avec des lignes en commentaire. Retirez le commentaire d'une ligne et changez la couleur : seul cet espace change.
+
+Les noms de couleurs : `vert` (boutons, onglet actif), `vert-clair` (messages, onglets inactifs), `vert-fonce` (texte sur vert-clair), `fond` (fond de page), `encre` (texte), `discret` (texte secondaire), `trait` (bordures claires), `bordure` (bordure des champs), `rouge`, `rouge-clair`, `rouge-fonce` (erreurs), `ambre`, `ambre-fonce` (avertissements). Le nom « vert » est historique : il désigne la couleur principale, quelle qu'elle soit.
+
+Après modification : enregistrer, `git push`, attendre le déploiement. En local, la page se met à jour toute seule. Pour choisir des couleurs bien lisibles, garder un bon contraste entre `vert` et le blanc (texte des boutons) ; un outil gratuit de contraste (« WebAIM contrast checker ») aide. Deux endroits restent écrits en dur : la couleur de la barre du navigateur (`themeColor` dans `app/layout.tsx` et `theme_color` dans `public/manifest.webmanifest`) et les icônes dans `public/icons`.
 
 ## Mode test (vos essais, sans les journaux de Vercel)
 

@@ -1,6 +1,7 @@
 import { creerClientServeur } from "@/lib/supabase/serveur";
 import { jetonValide } from "@/lib/jeton";
 import { erreur, lireCorps, ok } from "@/lib/serveur/http";
+import { totalLignes, type LigneReponse } from "@/lib/totaux";
 
 export const dynamic = "force-dynamic";
 
@@ -19,10 +20,14 @@ async function pharmacieParJeton(jeton: string | null) {
 
 // Planning de garde et historique d'une pharmacie, accessibles par son lien de gestion.
 export async function GET(requete: Request) {
-  const jeton = new URL(requete.url).searchParams.get("j");
+  const adresse = new URL(requete.url).searchParams;
+  const jeton = adresse.get("j");
   const contexte = await pharmacieParJeton(jeton);
   if (!contexte) return erreur("Lien invalide.", 404);
   const { db, pharmacie } = contexte;
+  // L'historique détaillé est plus lourd : la page « Mon espace » (relue toutes les 5 secondes)
+  // ne le demande pas.
+  const avecHistorique = adresse.get("historique") === "1";
 
   const hier = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
   const maintenant = new Date().toISOString();
@@ -33,12 +38,14 @@ export async function GET(requete: Request) {
       .eq("pharmacie_id", pharmacie.id)
       .gte("fin", hier)
       .order("debut"),
-    db
-      .from("alertes")
-      .select("id, cree_le, resultat, demandes(type, etat)")
+    (avecHistorique ? db : null)
+      ?.from("alertes")
+      .select(
+        "id, cree_le, envoyee_le, resultat, demande_id, demandes(type, etat, mode, texte_libre, repere, pharmacie_retenue_id, remise_le, lignes_demande(produit, quantite), evaluations(note, commentaire))"
+      )
       .eq("pharmacie_id", pharmacie.id)
       .order("cree_le", { ascending: false })
-      .limit(60),
+      .limit(60) ?? Promise.resolve({ data: [] }),
     // Demandes à traiter : alertes encore valables des dernières 12 heures, avec le contenu.
     db
       .from("alertes")
@@ -92,20 +99,89 @@ export async function GET(requete: Request) {
     demandes.push({ jeton: a.jeton, creeLe: a.cree_le, statut, resume: resume || "Demande", repere: d.repere });
   }
 
+  // Ma réponse à chaque demande (prix, substituts) pour le détail de l'historique.
+  const idsDemandes = ((alertes.data ?? []) as { demande_id: string }[]).map((a) => a.demande_id);
+  const { data: reponsesBd } = idsDemandes.length
+    ? await db
+        .from("reponses")
+        .select(
+          "demande_id, statut, cree_le, retrait_possible, livraison_possible, lignes_reponse(id, produit, disponible, substitut, prix_fcfa, substitut_accepte)"
+        )
+        .eq("pharmacie_id", pharmacie.id)
+        .in("demande_id", idsDemandes)
+    : { data: [] };
+  type ReponseBd = {
+    demande_id: string;
+    statut: string;
+    cree_le: string;
+    retrait_possible: boolean;
+    livraison_possible: boolean;
+    lignes_reponse: LigneReponse[] | null;
+  };
+  const reponsesParDemande = new Map<string, ReponseBd>();
+  for (const r of (reponsesBd ?? []) as ReponseBd[]) reponsesParDemande.set(r.demande_id, r);
+
+  type DemandeHistorique = {
+    type: string;
+    etat: string;
+    mode: "retrait" | "livraison" | null;
+    texte_libre: string | null;
+    repere: string | null;
+    pharmacie_retenue_id: string | null;
+    remise_le: string | null;
+    lignes_demande: { produit: string; quantite: number }[] | null;
+    evaluations: { note: number; commentaire: string | null } | { note: number; commentaire: string | null }[] | null;
+  };
+
   const historique = ((alertes.data ?? []) as unknown[]).map((brut) => {
     const a = brut as {
       id: string;
       cree_le: string;
+      envoyee_le: string | null;
       resultat: string | null;
-      demandes: { type: string; etat: string } | { type: string; etat: string }[] | null;
+      demande_id: string;
+      demandes: DemandeHistorique | DemandeHistorique[] | null;
     };
     const d = Array.isArray(a.demandes) ? a.demandes[0] : a.demandes;
+    const r = reponsesParDemande.get(a.demande_id) ?? null;
+    const lignes = r?.lignes_reponse ?? [];
+    const { total, prixManquant } = totalLignes(lignes);
+    const retenue = d?.pharmacie_retenue_id === pharmacie.id;
+    const evaluation = d ? (Array.isArray(d.evaluations) ? d.evaluations[0] : d.evaluations) : null;
+    const debutAttente = a.envoyee_le ?? a.cree_le;
     return {
       id: a.id,
       le: a.cree_le,
       resultat: a.resultat,
       type: d?.type ?? null,
       etat: d?.etat ?? null,
+      mode: d?.mode ?? null,
+      retenue,
+      // Une autre pharmacie a été choisie.
+      priseParAutre: !!d?.pharmacie_retenue_id && !retenue,
+      repere: d?.repere ?? null,
+      texteLibre: d?.texte_libre ?? null,
+      demandes: (d?.lignes_demande ?? []).map((l) => ({ produit: l.produit, quantite: l.quantite })),
+      delaiReponseSecondes: r ? Math.max(0, Math.round((new Date(r.cree_le).getTime() - new Date(debutAttente).getTime()) / 1000)) : null,
+      reponse: r
+        ? {
+            statut: r.statut,
+            retraitPossible: r.retrait_possible,
+            livraisonPossible: r.livraison_possible,
+            total,
+            prixManquant,
+            lignes: lignes.map((l) => ({
+              produit: l.produit,
+              disponible: l.disponible,
+              substitut: l.substitut,
+              prix: l.prix_fcfa,
+              substitutAccepte: l.substitut_accepte,
+            })),
+          }
+        : null,
+      remiseLe: d?.remise_le ?? null,
+      note: evaluation?.note ?? null,
+      commentaire: evaluation?.commentaire ?? null,
     };
   });
 

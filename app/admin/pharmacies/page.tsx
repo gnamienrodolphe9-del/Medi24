@@ -234,7 +234,7 @@ function ContenuPharmacies() {
   return (
     <div className="flex flex-col gap-6">
       {erreur && (
-        <p className="rounded-xl bg-rouge-clair p-3 text-sm font-semibold leading-snug text-[#8e1b12]" role="alert">
+        <p className="rounded-xl bg-rouge-clair p-3 text-sm font-semibold leading-snug text-rouge-fonce" role="alert">
           {erreur}
         </p>
       )}
@@ -348,7 +348,7 @@ function ContenuPharmacies() {
                   </p>
                 </div>
                 {p.suspendue ? (
-                  <span className="whitespace-nowrap rounded-xl bg-rouge-clair px-2.5 py-1 text-[13px] font-bold text-[#8e1b12]">
+                  <span className="whitespace-nowrap rounded-xl bg-rouge-clair px-2.5 py-1 text-[13px] font-bold text-rouge-fonce">
                     Suspendue
                   </span>
                 ) : p.validee ? (
@@ -401,7 +401,7 @@ function ContenuPharmacies() {
                   <button
                     type="button"
                     onClick={() => changerStatut(p, { validee: false })}
-                    className="min-h-11 rounded-xl border-[1.5px] border-[#76837b] bg-white px-4 text-sm font-bold"
+                    className="min-h-11 rounded-xl border-[1.5px] border-bordure bg-white px-4 text-sm font-bold"
                   >
                     Retirer la validation
                   </button>

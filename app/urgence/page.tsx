@@ -143,7 +143,7 @@ export default function Urgence() {
                     type="checkbox"
                     checked={coches.has(s.id)}
                     onChange={() => basculer(s.id)}
-                    className="h-6 w-6 shrink-0 accent-[#b42318]"
+                    className="h-6 w-6 shrink-0 accent-rouge"
                   />
                   {s.libelle}
                 </label>
@@ -154,7 +154,7 @@ export default function Urgence() {
             <button
               type="button"
               onClick={() => setAucunSigne(true)}
-              className="min-h-12 rounded-2xl border-[1.5px] border-[#76837b] bg-white px-4 text-base font-bold"
+              className="min-h-12 rounded-2xl border-[1.5px] border-bordure bg-white px-4 text-base font-bold"
             >
               Aucun de ces signes
             </button>
@@ -163,10 +163,10 @@ export default function Urgence() {
 
         {signeGrave && (
           <section className="flex flex-col gap-3 rounded-2xl bg-rouge-clair p-4" role="alert">
-            <h2 className="text-xl font-extrabold leading-tight text-[#8e1b12]">
+            <h2 className="text-xl font-extrabold leading-tight text-rouge-fonce">
               Appelez le SAMU maintenant : {NUMERO_SAMU}
             </h2>
-            <p className="text-[15px] leading-snug text-[#8e1b12]">
+            <p className="text-[15px] leading-snug text-rouge-fonce">
               Ne cherchez pas de médicament. Restez avec la personne et donnez votre position.
             </p>
             <a
@@ -184,7 +184,7 @@ export default function Urgence() {
             >
               {recherchePos ? "Recherche de la position…" : "Partager ma position à un proche"}
             </button>
-            {messagePos && <p className="text-sm font-semibold text-[#8e1b12]">{messagePos}</p>}
+            {messagePos && <p className="text-sm font-semibold text-rouge-fonce">{messagePos}</p>}
             {texteUrgence && (
               <div className="flex flex-col gap-2">
                 <a

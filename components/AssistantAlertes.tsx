@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { BOUTON_PRINCIPAL, BOUTON_SECONDAIRE, Carte } from "@/components/ui";
 import { useInstallation } from "@/lib/client/installation";
+import { VERSION_APP } from "@/lib/version";
 import {
   activerPush,
   desactiverPush,
@@ -64,12 +65,34 @@ export default function AssistantAlertes({
     };
   }, [genre, jeton]);
 
+  // Activation automatique : dès l'ouverture, on demande l'autorisation des notifications, sans
+  // attendre un clic. (Le navigateur affiche sa propre fenêtre « Autoriser » : il est impossible de
+  // l'accepter à la place de la personne.) Une seule tentative par ouverture ; le bouton reste
+  // disponible si la personne a refusé ou si le navigateur exige un toucher (iPhone).
+  const { pret, ios: iosDetecte, installee: installeeDetectee } = installation;
+  useEffect(() => {
+    if (!pret || !cles || push !== "inactif") return;
+    if (iosDetecte && !installeeDetectee) return;
+    try {
+      const cle = `medi24-auto-${genre}`;
+      if (sessionStorage.getItem(cle)) return;
+      sessionStorage.setItem(cle, "1");
+    } catch {
+      // Sans mémoire de session, on tente quand même une fois par rendu : sans gravité.
+    }
+    void (async () => {
+      const r = await activerPush(genre, jeton);
+      setPush(r.ok ? "actif" : await lireEtatPush());
+    })();
+  }, [pret, cles, push, iosDetecte, installeeDetectee, genre, jeton]);
+
   if (!installation.pret) return null;
 
   const { installee, installable, ios, android, integre } = installation;
   const texte = TEXTES[role];
   const alertesActives = push === "actif";
-  // Rien à faire : on réduit l'encart à une ligne de confirmation.
+  // Application installée et alertes actives : plus rien à faire, l'encart disparaît pour laisser
+  // la place au reste de la page. Il ne reste qu'une ligne discrète.
   const toutEstPret = installee && alertesActives;
 
   async function installerApp() {
@@ -112,9 +135,17 @@ export default function AssistantAlertes({
     setOccupe(false);
   }
 
+  if (toutEstPret) {
+    return (
+      <p className="text-center text-[12.5px] text-discret" role="status">
+        ✓ Les alertes et notifications sont activées · {VERSION_APP}
+      </p>
+    );
+  }
+
   return (
-    <Carte titre={toutEstPret ? "Alertes activées sur cet appareil" : texte.titre}>
-      {!toutEstPret && <p className="text-[15px] leading-snug text-discret">{texte.explication}</p>}
+    <Carte titre={texte.titre}>
+      <p className="text-[15px] leading-snug text-discret">{texte.explication}</p>
 
       {/* ÉTAPE 1 : installer l'application */}
       <div className="flex flex-col gap-2">
@@ -175,7 +206,7 @@ export default function AssistantAlertes({
           className={`text-[15px] font-bold ${alertesActives ? "text-vert-fonce" : push === "bloque" ? "text-rouge" : ""}`}
         >
           {alertesActives
-            ? "✓ 2. Alertes activées"
+            ? "✓ Les alertes et notifications sont activées"
             : push === "bloque"
               ? "✕ 2. Alertes bloquées dans le navigateur"
               : "2. Activer les alertes"}
@@ -224,10 +255,12 @@ export default function AssistantAlertes({
         )}
       </div>
 
+      <p className="text-[11.5px] text-discret">Version {VERSION_APP}</p>
+
       {message && (
         <p
           className={`rounded-xl p-3 text-sm font-semibold leading-snug ${
-            message.ton === "info" ? "bg-vert-clair text-vert-fonce" : "bg-rouge-clair text-[#8e1b12]"
+            message.ton === "info" ? "bg-vert-clair text-vert-fonce" : "bg-rouge-clair text-rouge-fonce"
           }`}
           role={message.ton === "erreur" ? "alert" : "status"}
         >

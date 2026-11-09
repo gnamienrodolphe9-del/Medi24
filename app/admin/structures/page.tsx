@@ -114,7 +114,7 @@ function Contenu() {
                 {s.ouvert_la_nuit ? <Pastille ton="vert">Affichée</Pastille> : <Pastille ton="gris">Masquée</Pastille>}
               </div>
               <div className="flex gap-2">
-                <button type="button" onClick={() => basculer(s)} className="min-h-11 rounded-xl border-[1.5px] border-[#76837b] bg-white px-3.5 text-sm font-bold">
+                <button type="button" onClick={() => basculer(s)} className="min-h-11 rounded-xl border-[1.5px] border-bordure bg-white px-3.5 text-sm font-bold">
                   {s.ouvert_la_nuit ? "Masquer" : "Afficher"}
                 </button>
                 <button type="button" onClick={() => supprimer(s)} className="min-h-11 rounded-xl border-[1.5px] border-rouge bg-white px-3.5 text-sm font-bold text-rouge">

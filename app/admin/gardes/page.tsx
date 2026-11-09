@@ -146,7 +146,7 @@ function ContenuGardes() {
   return (
     <div className="flex flex-col gap-6">
       {erreur && (
-        <p className="rounded-xl bg-rouge-clair p-3 text-sm font-semibold leading-snug text-[#8e1b12]" role="alert">
+        <p className="rounded-xl bg-rouge-clair p-3 text-sm font-semibold leading-snug text-rouge-fonce" role="alert">
           {erreur}
         </p>
       )}

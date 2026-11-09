@@ -201,7 +201,7 @@ export default function ListePharmaciesGarde() {
 
       {etat === "erreur" && (
         <div className="flex flex-col gap-3 rounded-xl bg-rouge-clair p-4" role="alert">
-          <p className="text-base font-bold text-[#8e1b12]">
+          <p className="text-base font-bold text-rouge-fonce">
             Impossible de charger la liste pour le moment.
           </p>
           <p className="text-sm leading-snug">

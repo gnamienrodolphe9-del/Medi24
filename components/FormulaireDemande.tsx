@@ -265,7 +265,7 @@ export default function FormulaireDemande() {
             </label>
           </div>
           <label className="flex min-h-12 items-center gap-3 text-[15px] font-semibold">
-            <input type="checkbox" checked={grossesse} onChange={(e) => setGrossesse(e.target.checked)} className="h-6 w-6 accent-[#0a6847]" />
+            <input type="checkbox" checked={grossesse} onChange={(e) => setGrossesse(e.target.checked)} className="h-6 w-6 accent-vert" />
             La personne est enceinte
           </label>
           <label className="flex flex-col gap-1.5 text-sm font-semibold">
@@ -346,7 +346,7 @@ export default function FormulaireDemande() {
           type="checkbox"
           checked={consentement}
           onChange={(e) => setConsentement(e.target.checked)}
-          className="mt-0.5 h-6 w-6 shrink-0 accent-[#0a6847]"
+          className="mt-0.5 h-6 w-6 shrink-0 accent-vert"
         />
         <span>
           J&apos;accepte que Medi24 transmette ma demande, ma position et mon numéro aux pharmacies de garde pour me répondre. Je comprends que Medi24 n&apos;est pas un avis médical : le pharmacien décide de ce qu&apos;il me remet.

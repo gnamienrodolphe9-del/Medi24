@@ -28,7 +28,10 @@ function depuis(iso: string): string {
 
 // Les demandes arrivent ici toute seules : la pharmacie n'a pas à chercher de lien.
 export default function DemandesEnCours({ demandes }: { demandes: DemandePharmacie[] }) {
-  const nouvelles = demandes.filter((d) => d.statut === "nouvelle");
+  // La plus ancienne d'abord : le patient qui attend depuis le plus longtemps est servi en premier.
+  const nouvelles = demandes
+    .filter((d) => d.statut === "nouvelle")
+    .sort((a, b) => new Date(a.creeLe).getTime() - new Date(b.creeLe).getTime());
   const suivies = demandes.filter((d) => d.statut !== "nouvelle");
 
   return (

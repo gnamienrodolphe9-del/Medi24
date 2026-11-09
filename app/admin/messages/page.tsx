@@ -149,7 +149,7 @@ function Contenu() {
           Actualiser
         </button>
         <label className="flex min-h-11 items-center gap-2 text-sm font-semibold">
-          <input type="checkbox" checked={auto} onChange={(e) => setAuto(e.target.checked)} className="h-5 w-5 accent-[#0a6847]" />
+          <input type="checkbox" checked={auto} onChange={(e) => setAuto(e.target.checked)} className="h-5 w-5 accent-vert" />
           Toutes les 5 s
         </label>
       </div>

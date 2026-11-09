@@ -10,11 +10,11 @@ export const BOUTON_SECONDAIRE =
 export const BOUTON_DANGER =
   "inline-flex min-h-12 w-full items-center justify-center rounded-2xl border-[1.5px] border-rouge bg-white px-4 text-base font-bold text-rouge disabled:opacity-60";
 export const CHAMP =
-  "min-h-12 w-full rounded-[10px] border-[1.5px] border-[#76837b] bg-white px-3.5 py-2 text-base text-encre";
+  "min-h-12 w-full rounded-[10px] border-[1.5px] border-bordure bg-white px-3.5 py-2 text-base text-encre";
 
 export function MessageErreur({ children }: { children: ReactNode }) {
   return (
-    <p className="rounded-xl bg-rouge-clair p-3 text-sm font-semibold leading-snug text-[#8e1b12]" role="alert">
+    <p className="rounded-xl bg-rouge-clair p-3 text-sm font-semibold leading-snug text-rouge-fonce" role="alert">
       {children}
     </p>
   );
@@ -69,7 +69,7 @@ export function Pastille({ ton, children }: { ton: "vert" | "ambre" | "rouge" | 
   const classes = {
     vert: "bg-vert-clair text-vert-fonce",
     ambre: "bg-ambre text-ambre-fonce",
-    rouge: "bg-rouge-clair text-[#8e1b12]",
+    rouge: "bg-rouge-clair text-rouge-fonce",
     gris: "bg-trait text-encre",
   }[ton];
   return (

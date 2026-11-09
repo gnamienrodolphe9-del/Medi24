@@ -49,7 +49,7 @@ function Contenu() {
       <div className="flex flex-col gap-2">
         <input value={filtre} onChange={(e) => setFiltre(e.target.value)} placeholder="Filtrer (sms, vague, repli…)" className={CLASSE_CHAMP} aria-label="Filtrer le journal" />
         <label className="flex min-h-11 items-center gap-3 text-sm font-semibold">
-          <input type="checkbox" checked={seulementProblemes} onChange={(e) => setSeulementProblemes(e.target.checked)} className="h-5 w-5 accent-[#0a6847]" />
+          <input type="checkbox" checked={seulementProblemes} onChange={(e) => setSeulementProblemes(e.target.checked)} className="h-5 w-5 accent-vert" />
           Seulement les problèmes (échecs, erreurs, repli, expirées)
         </label>
         <button type="button" onClick={charger} className="min-h-11 self-start rounded-xl border-[1.5px] border-vert bg-white px-4 text-sm font-bold text-vert">

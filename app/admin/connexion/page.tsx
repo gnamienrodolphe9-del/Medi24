@@ -59,7 +59,7 @@ export default function ConnexionAdmin() {
           onChange={(e) => setMotDePasse(e.target.value)}
         />
         {erreur && (
-          <p className="rounded-xl bg-rouge-clair p-3 text-sm font-semibold text-[#8e1b12]" role="alert">
+          <p className="rounded-xl bg-rouge-clair p-3 text-sm font-semibold text-rouge-fonce" role="alert">
             {erreur}
           </p>
         )}

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Espace from "@/components/Espace";
 
 // Manifeste choisi côté serveur, dès le chargement : l'icône installée rouvre la bonne page.
 export async function generateMetadata({
@@ -12,5 +13,5 @@ export async function generateMetadata({
 }
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-  return children;
+  return <Espace nom="pharmacie">{children}</Espace>;
 }

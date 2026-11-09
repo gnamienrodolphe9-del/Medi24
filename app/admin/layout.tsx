@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Espace from "@/components/Espace";
 
 // L'administration ne doit jamais apparaître dans les moteurs de recherche.
 export const metadata: Metadata = {
@@ -7,5 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function LayoutAdmin({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+  return <Espace nom="admin">{children}</Espace>;
 }

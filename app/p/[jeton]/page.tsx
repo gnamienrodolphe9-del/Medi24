@@ -269,11 +269,11 @@ function FormulaireReponse({ jeton, vue, rafraichir }: { jeton: string; vue: Vue
 
           <Carte titre="Remise possible">
             <label className="flex min-h-12 items-center gap-3 text-base font-semibold">
-              <input type="checkbox" checked={retrait} onChange={(e) => setRetrait(e.target.checked)} className="h-6 w-6 accent-[#0a6847]" />
+              <input type="checkbox" checked={retrait} onChange={(e) => setRetrait(e.target.checked)} className="h-6 w-6 accent-vert" />
               Le patient peut venir chercher
             </label>
             <label className="flex min-h-12 items-center gap-3 text-base font-semibold">
-              <input type="checkbox" checked={livraison} onChange={(e) => setLivraison(e.target.checked)} className="h-6 w-6 accent-[#0a6847]" />
+              <input type="checkbox" checked={livraison} onChange={(e) => setLivraison(e.target.checked)} className="h-6 w-6 accent-vert" />
               Je peux livrer (mon livreur)
             </label>
           </Carte>

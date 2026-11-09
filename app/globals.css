@@ -1,6 +1,16 @@
 @import "tailwindcss";
 
-/* Couleurs de Medi24, reprises des maquettes */
+/* ============================================================================
+   COULEURS DE MEDI24
+   Les couleurs ci-dessous sont celles de l'espace PATIENT (et de l'accueil, de l'urgence,
+   de l'évaluation). Modifier une valeur ici change tout l'espace patient.
+     fond = fond de page · encre = texte · discret = texte secondaire · trait = bordures claires
+     vert = couleur principale (boutons) · vert-clair = fond des messages et onglets inactifs
+     vert-fonce = texte sur vert-clair · rouge / rouge-clair / rouge-fonce = erreurs et alertes
+     ambre / ambre-fonce = avertissements · bordure = bordure des champs
+   Les trois autres espaces (pharmacie, livreur, admin) peuvent avoir leurs propres couleurs :
+   voir la section « COULEURS PAR ESPACE » plus bas.
+   ============================================================================ */
 @theme {
   --color-fond: #f5f6f1;
   --color-encre: #14211b;
@@ -13,6 +23,8 @@
   --color-rouge-clair: #fdecea;
   --color-ambre: #fff3d6;
   --color-ambre-fonce: #5c3a00;
+  --color-rouge-fonce: #8e1b12;
+  --color-bordure: #76837b;
   --font-sans: var(--police-figtree), system-ui, sans-serif;
 }
 
@@ -26,4 +38,39 @@ body {
 a,
 button {
   -webkit-tap-highlight-color: transparent;
+}
+
+/* ============================================================================
+   COULEURS PAR ESPACE
+   Par défaut, la pharmacie, le livreur et l'admin reprennent les couleurs ci-dessus.
+   Pour donner une apparence différente à un espace, retirez les signes de commentaire
+   (le slash-étoile au début et l'étoile-slash à la fin) de la ligne voulue et changez la valeur. Exemple : un bleu pour la pharmacie.
+   Seules les couleurs écrites ici changent ; les autres restent celles du patient.
+   ============================================================================ */
+
+/* ESPACE PHARMACIE : « Mon espace », historique, page de réponse à une alerte */
+[data-espace="pharmacie"],
+html:has([data-espace="pharmacie"]) {
+  /* --color-vert: #1d4ed8; */
+  /* --color-vert-clair: #e0e9fb; */
+  /* --color-vert-fonce: #173a9e; */
+  /* --color-fond: #f4f6fb; */
+}
+
+/* ESPACE LIVREUR : page de la course */
+[data-espace="livreur"],
+html:has([data-espace="livreur"]) {
+  /* --color-vert: #b45309; */
+  /* --color-vert-clair: #fdebd3; */
+  /* --color-vert-fonce: #7c3a06; */
+  /* --color-fond: #faf6f0; */
+}
+
+/* ESPACE ADMIN : toutes les pages /admin */
+[data-espace="admin"],
+html:has([data-espace="admin"]) {
+  /* --color-vert: #4338ca; */
+  /* --color-vert-clair: #e6e4fa; */
+  /* --color-vert-fonce: #2c2590; */
+  /* --color-fond: #f5f5fa; */
 }

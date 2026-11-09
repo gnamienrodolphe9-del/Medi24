@@ -26,7 +26,7 @@ export default function CadreAdmin({
           <button
             type="button"
             onClick={deconnexion}
-            className="min-h-11 rounded-xl border-[1.5px] border-[#76837b] bg-white px-3.5 text-sm font-bold"
+            className="min-h-11 rounded-xl border-[1.5px] border-bordure bg-white px-3.5 text-sm font-bold"
           >
             Se déconnecter
           </button>
@@ -79,7 +79,7 @@ export default function CadreAdmin({
       )}
 
       {etat === "erreur" && (
-        <p className="rounded-xl bg-rouge-clair p-4 text-sm font-semibold leading-snug text-[#8e1b12]" role="alert">
+        <p className="rounded-xl bg-rouge-clair p-4 text-sm font-semibold leading-snug text-rouge-fonce" role="alert">
           Connexion à la base impossible. Vérifiez le fichier .env.local (voir
           .env.example) puis relancez le site.
         </p>
