@@ -12,19 +12,19 @@
    voir la section « COULEURS PAR ESPACE » plus bas.
    ============================================================================ */
 @theme {
-  --color-fond: #f5f6f1;
-  --color-encre: #14211b;
-  --color-discret: #4f5d56;
-  --color-trait: #d5dbd3;
-  --color-vert: #0a6847;
-  --color-vert-clair: #e3f1ea;
-  --color-vert-fonce: #0a4a33;
-  --color-rouge: #b42318;
-  --color-rouge-clair: #fdecea;
-  --color-ambre: #fff3d6;
-  --color-ambre-fonce: #5c3a00;
-  --color-rouge-fonce: #8e1b12;
-  --color-bordure: #76837b;
+  --color-fond:           #fffefe;
+  --color-encre:          #14211b;
+  --color-discret:        #4f5d56;
+  --color-trait:          #d5dbd3;
+  --color-vert:           #028208; 
+  --color-vert-clair:     #d8f5da;
+  --color-vert-fonce:     #0a4a33;
+  --color-rouge:          #b4231a;
+  --color-rouge-clair:    #fdecea;
+  --color-ambre:          #fff3d6;
+  --color-ambre-fonce:    #5c3a00;
+  --color-rouge-fonce:    #8e1b12;
+  --color-bordure:        #76837b;
   --font-sans: var(--police-figtree), system-ui, sans-serif;
 }
 
@@ -51,26 +51,27 @@ button {
 /* ESPACE PHARMACIE : « Mon espace », historique, page de réponse à une alerte */
 [data-espace="pharmacie"],
 html:has([data-espace="pharmacie"]) {
-  /* --color-vert: #1d4ed8; */
-  /* --color-vert-clair: #e0e9fb; */
-  /* --color-vert-fonce: #173a9e; */
-  /* --color-fond: #f4f6fb; */
+  --color-vert: #028208; 
+  --color-vert-clair: #e8efeb;
+  --color-vert-fonce: #028208; 
+  --color-fond: #fffefe; 
+  --color-rouge: #d8f5da;
 }
 
 /* ESPACE LIVREUR : page de la course */
 [data-espace="livreur"],
 html:has([data-espace="livreur"]) {
-  /* --color-vert: #b45309; */
-  /* --color-vert-clair: #fdebd3; */
-  /* --color-vert-fonce: #7c3a06; */
-  /* --color-fond: #faf6f0; */
+  --color-vert: #028208; 
+  --color-vert-clair: #e8efeb; 
+  --color-vert-fonce: #028208; 
+  --color-fond: #fffefe; 
 }
 
 /* ESPACE ADMIN : toutes les pages /admin */
 [data-espace="admin"],
 html:has([data-espace="admin"]) {
-  /* --color-vert: #4338ca; */
-  /* --color-vert-clair: #e6e4fa; */
-  /* --color-vert-fonce: #2c2590; */
-  /* --color-fond: #f5f5fa; */
+  --color-vert: #028208; 
+  --color-vert-clair: #e4faeb; 
+  --color-vert-fonce: #028208; 
+  --color-fond: #ffffff;
 }
