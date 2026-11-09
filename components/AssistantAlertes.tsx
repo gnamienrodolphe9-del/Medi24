@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { BOUTON_PRINCIPAL, BOUTON_SECONDAIRE, Carte } from "@/components/ui";
 import { useInstallation } from "@/lib/client/installation";
-import { VERSION_APP } from "@/lib/version";
+// import { VERSION_APP } from "@/lib/version";
 import {
   activerPush,
   desactiverPush,
@@ -135,13 +135,13 @@ export default function AssistantAlertes({
     setOccupe(false);
   }
 
-  if (toutEstPret) {
-    return (
-      <p className="text-center text-[12.5px] text-discret" role="status">
-        ✓ Les alertes et notifications sont activées · {VERSION_APP}
-      </p>
-    );
-  }
+  // if (toutEstPret) {
+  //   return (
+  //     <p className="text-center text-[12.5px] text-discret" role="status">
+  //       ✓ Les alertes et notifications sont activées · {VERSION_APP}
+  //     </p>
+  //   );
+  // }
 
   return (
     <Carte titre={texte.titre}>
@@ -255,7 +255,7 @@ export default function AssistantAlertes({
         )}
       </div>
 
-      <p className="text-[11.5px] text-discret">Version {VERSION_APP}</p>
+      {/* <p className="text-[11.5px] text-discret">Version {VERSION_APP}</p> */}
 
       {message && (
         <p

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Figtree } from "next/font/google";
 import "./globals.css";
 import EnregistrementServiceWorker from "@/components/EnregistrementServiceWorker";
+import { VERSION_APP } from "@/lib/version";
 
 const figtree = Figtree({
   subsets: ["latin"],
@@ -44,6 +45,7 @@ export default function LayoutRacine({
       </head>
       <body className="mx-auto min-h-screen max-w-md font-sans antialiased">
         {children}
+        <p className="py-4 text-center text-sm text-gray-500">Medi2 - {new Date().getFullYear()} - Version : {VERSION_APP} </p>
         <EnregistrementServiceWorker />
       </body>
     </html>
