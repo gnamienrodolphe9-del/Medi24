@@ -55,7 +55,6 @@ html:has([data-espace="pharmacie"]) {
   --color-vert-clair: #e8efeb;
   --color-vert-fonce: #028208; 
   --color-fond: #fffefe; 
-  --color-rouge: #d8f5da;
 }
 
 /* ESPACE LIVREUR : page de la course */
