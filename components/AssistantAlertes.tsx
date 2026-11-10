@@ -135,13 +135,7 @@ export default function AssistantAlertes({
     setOccupe(false);
   }
 
-  // if (toutEstPret) {
-  //   return (
-  //     <p className="text-center text-[12.5px] text-discret" role="status">
-  //       ✓ Les alertes et notifications sont activées · {VERSION_APP}
-  //     </p>
-  //   );
-  // }
+  
 
   return (
     <Carte titre={texte.titre}>
@@ -269,4 +263,12 @@ export default function AssistantAlertes({
       )}
     </Carte>
   );
+
+  if (toutEstPret) {
+    return (
+      <p className="text-center text-[12.5px] text-discret" role="status">
+        ✓ Les alertes et notifications sont activées 
+      </p>
+    );
+  }
 }
