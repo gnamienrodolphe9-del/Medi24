@@ -188,3 +188,22 @@ Règles appliquées par le code :
 - Choisir le fournisseur SMS, faire un test réel avec 2 ou 3 pharmacies amies et votre propre téléphone, sur une connexion mobile lente.
 - Supprimer les pharmacies fictives du seed.
 - Vérifier que le projet Supabase de production a une sauvegarde automatique (plan payant) ou faire un export régulier.
+
+
+## Notifications : clé lue à l'exécution (v7)
+
+La clé publique est donnée à la page par `/api/push/cle`, lue à chaque demande côté serveur : elle ne dépend plus du cache de construction de Vercel.
+Variables Vercel (portée Production, sans guillemets ni espaces) : `NEXT_PUBLIC_VAPID_PUBLIC_KEY` (ou `VAPID_PUBLIC_KEY`) et `VAPID_PRIVATE_KEY`, puis redéployer.
+Vérification rapide : ouvrir `/api/push/cle` et contrôler que `cle` est remplie et `serveurPret` vaut `true`.
+
+
+## Logo et compte patient (v8)
+
+**Logo** : remplacez ces fichiers (mêmes noms, même taille) pour changer l'image partout :
+`public/logo.png` (logo complet), `public/logo-embleme.png` (en-tête), `public/icons/icone-192.png`, `icone-512.png`,
+`icone-maskable-512.png` (icône de l'application, avec marge), `apple-touch-icon.png` (iPhone) et `app/icon.png` (onglet du navigateur).
+Après changement, désinstallez puis réinstallez l'application : les téléphones gardent l'ancienne icône.
+
+**Compte patient** : le numéro vérifié par SMS identifie le patient. Après le premier code, l'appareil garde une session de
+180 jours (cookie `medi24_session`, empreinte seule en base, table `sessions_patient`) : plus de code à saisir, et la page
+`/compte` liste les demandes. Sur un autre téléphone, un code SMS reconnecte. Migration à exécuter : `0009_comptes_patients.sql`.

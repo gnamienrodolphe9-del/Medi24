@@ -1,7 +1,7 @@
 // Service worker de Medi24 : garde la page Urgence, la page hors ligne et les fichiers
 // du site en mémoire, pour que l'espace Urgence s'ouvre même sans internet.
 // Changer le numéro de version pour forcer la mise à jour de la mémoire.
-const VERSION = "medi24-v3";
+const VERSION = "medi24-v4";
 const PAGES_EN_MEMOIRE = ["/urgence", "/hors-ligne"];
 
 self.addEventListener("install", (evenement) => {

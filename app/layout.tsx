@@ -17,7 +17,10 @@ export const metadata: Metadata = {
     "Trouvez une pharmacie de garde et votre médicament, la nuit, à Yopougon.",
   manifest: "/manifest.webmanifest",
   applicationName: "Medi24",
+  icons: { apple: "/icons/apple-touch-icon.png" },
 };
+
+
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -45,7 +48,7 @@ export default function LayoutRacine({
       </head>
       <body className="mx-auto min-h-screen max-w-md font-sans antialiased">
         {children}
-        <p className="py-4 text-center text-sm text-gray-500">Medi2 - {new Date().getFullYear()} - Version : {VERSION_APP} </p>
+        <p className="py-4 text-center text-sm text-gray-500">Medi24 - {new Date().getFullYear()} - Version : {VERSION_APP} </p>
         <EnregistrementServiceWorker />
       </body>
     </html>

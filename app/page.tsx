@@ -112,6 +112,13 @@ export default function Accueil() {
         </span>
       </Link>
 
+      <Link
+        href="/compte"
+        className="flex min-h-12 items-center justify-center rounded-[14px] text-[15px] font-bold text-vert underline"
+      >
+        Mon compte et mes demandes
+      </Link>
+
       <p className="mt-auto text-[13px] leading-snug text-discret">
         Medi24 met en relation avec les pharmacies. Le pharmacien décide de ce
         qu&apos;il vous remet. Service en test à Yopougon.

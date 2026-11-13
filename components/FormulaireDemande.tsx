@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { appeler, envoyerJson } from "@/lib/client/api";
 import { compresserImage } from "@/lib/client/image";
 import { memoriserDemande } from "@/lib/client/memoire";
+import { formaterTelephone, useCompte } from "@/lib/client/compte";
 import { lirePosition, type PositionSimple } from "@/lib/client/position";
 import { LIMITES, validerDemande, type TypeDemande } from "@/lib/validation";
 import { NUMERO_SAMU } from "@/lib/urgence";
@@ -43,6 +44,12 @@ export default function FormulaireDemande() {
   const [rechercheEnCours, setRechercheEnCours] = useState(false);
   const [repere, setRepere] = useState("");
   const [telephone, setTelephone] = useState("");
+  const compte = useCompte();
+  // Patient déjà connecté sur cet appareil : son numéro est repris, aucun code à saisir.
+  const connecte = compte.connecte && compte.telephone !== null;
+  useEffect(() => {
+    if (compte.connecte && compte.telephone) setTelephone(compte.telephone);
+  }, [compte.connecte, compte.telephone]);
   const [codeEnvoye, setCodeEnvoye] = useState(false);
   const [code, setCode] = useState("");
   const [codeDev, setCodeDev] = useState<string | null>(null);
@@ -147,7 +154,7 @@ export default function FormulaireDemande() {
       setErreur(verification.erreurs.join(" "));
       return;
     }
-    if (!/^\d{5}$/.test(code.trim())) {
+    if (!connecte && !/^\d{5}$/.test(code.trim())) {
       setErreur("Entrez le code à 5 chiffres reçu par SMS.");
       return;
     }
@@ -163,6 +170,12 @@ export default function FormulaireDemande() {
     const r = await appeler<{ jeton: string }>("/api/demandes", { method: "POST", body: formulaire });
     if (!r.ok) {
       setEnCours(false);
+      if (connecte && r.statut === 403) {
+        // La session a expiré côté serveur : on repasse par le code SMS.
+        await compte.actualiser();
+        setErreur("Votre connexion a expiré. Recevez un nouveau code par SMS pour continuer.");
+        return;
+      }
       setErreur(r.erreur);
       return;
     }
@@ -300,43 +313,68 @@ export default function FormulaireDemande() {
       </Carte>
 
       <Carte titre="Votre numéro">
-        <label className="flex flex-col gap-1.5 text-sm font-semibold">
-          Téléphone
-          <input
-            type="tel"
-            inputMode="tel"
-            autoComplete="tel"
-            value={telephone}
-            onChange={(e) => {
-              setTelephone(e.target.value);
-              setCodeEnvoye(false);
-              setCodeDev(null);
-            }}
-            placeholder="07 00 00 00 00"
-            className={CHAMP}
-          />
-        </label>
-        {!codeEnvoye ? (
-          <button type="button" onClick={recevoirCode} disabled={envoiCode} className={BOUTON_SECONDAIRE}>
-            {envoiCode ? "Envoi…" : "Recevoir un code par SMS"}
-          </button>
+        {connecte ? (
+          <>
+            <p className="text-[15px]">
+              Connecté avec le <strong>{formaterTelephone(compte.telephone ?? "")}</strong>. Aucun code à saisir.
+            </p>
+            <button
+              type="button"
+              onClick={async () => {
+                await compte.deconnecter();
+                setTelephone("");
+                setCodeEnvoye(false);
+                setCode("");
+              }}
+              className="min-h-11 self-start text-sm font-semibold text-vert underline"
+            >
+              Ce n&apos;est pas mon numéro
+            </button>
+          </>
         ) : (
           <>
             <label className="flex flex-col gap-1.5 text-sm font-semibold">
-              Code reçu par SMS (5 chiffres)
+              Téléphone
               <input
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                maxLength={5}
-                value={code}
-                onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-                className={`${CHAMP} text-center text-2xl font-extrabold tracking-[0.4em]`}
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                value={telephone}
+                onChange={(e) => {
+                  setTelephone(e.target.value);
+                  setCodeEnvoye(false);
+                  setCodeDev(null);
+                }}
+                placeholder="07 00 00 00 00"
+                className={CHAMP}
               />
             </label>
-            {codeDev && <MessageInfo>Mode test : votre code est {codeDev}</MessageInfo>}
-            <button type="button" onClick={recevoirCode} disabled={envoiCode} className="min-h-11 text-sm font-semibold text-vert underline">
-              Renvoyer le code
-            </button>
+            {!codeEnvoye ? (
+              <button type="button" onClick={recevoirCode} disabled={envoiCode} className={BOUTON_SECONDAIRE}>
+                {envoiCode ? "Envoi…" : "Recevoir un code par SMS"}
+              </button>
+            ) : (
+              <>
+                <label className="flex flex-col gap-1.5 text-sm font-semibold">
+                  Code reçu par SMS (5 chiffres)
+                  <input
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={5}
+                    value={code}
+                    onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+                    className={`${CHAMP} text-center text-2xl font-extrabold tracking-[0.4em]`}
+                  />
+                </label>
+                {codeDev && <MessageInfo>Mode test : votre code est {codeDev}</MessageInfo>}
+                <button type="button" onClick={recevoirCode} disabled={envoiCode} className="min-h-11 text-sm font-semibold text-vert underline">
+                  Renvoyer le code
+                </button>
+                <p className="text-[13px] text-discret">
+                  Ce code ne sera demandé qu&apos;une fois : votre compte reste ouvert sur ce téléphone.
+                </p>
+              </>
+            )}
           </>
         )}
       </Carte>
@@ -355,10 +393,10 @@ export default function FormulaireDemande() {
 
       {erreur && <MessageErreur>{erreur}</MessageErreur>}
 
-      <button type="submit" disabled={enCours || !codeEnvoye} className={BOUTON_PRINCIPAL}>
+      <button type="submit" disabled={enCours || (!connecte && !codeEnvoye)} className={BOUTON_PRINCIPAL}>
         {enCours ? "Envoi aux pharmacies…" : "Envoyer ma demande"}
       </button>
-      {!codeEnvoye && (
+      {!connecte && !codeEnvoye && (
         <p className="-mt-3 text-center text-[13px] text-discret">
           Recevez d&apos;abord le code par SMS pour pouvoir envoyer.
         </p>

@@ -2,6 +2,7 @@ import { randomUUID } from "crypto";
 import { creerClientServeur } from "@/lib/supabase/serveur";
 import { validerDemande, validerFichierOrdonnance } from "@/lib/validation";
 import { verifierCode } from "@/lib/serveur/verification";
+import { creerSession, lireSession } from "@/lib/serveur/session_patient";
 import { avancerCascade } from "@/lib/serveur/cascade";
 import { erreur, ok } from "@/lib/serveur/http";
 
@@ -66,9 +67,15 @@ export async function POST(requete: Request) {
     return erreur("Trop de demandes pour ce numéro. Réessayez dans une heure.", 429);
   }
 
-  const code = typeof donnees.code === "string" ? donnees.code.trim() : "";
-  if (!(await verifierCode(db, d.telephone, code))) {
-    return erreur("Code de vérification incorrect ou expiré.", 403);
+  // Patient déjà connecté sur cet appareil avec CE numéro : pas de nouveau code.
+  // Sinon, code reçu par SMS ; une fois vérifié, l'appareil garde une session (compte patient).
+  const session = await lireSession(db);
+  if (!session || session.telephone !== d.telephone) {
+    const code = typeof donnees.code === "string" ? donnees.code.trim() : "";
+    if (!(await verifierCode(db, d.telephone, code))) {
+      return erreur("Code de vérification incorrect ou expiré.", 403);
+    }
+    await creerSession(db, d.telephone);
   }
 
   const { data: demande, error } = await db

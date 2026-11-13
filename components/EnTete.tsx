@@ -6,20 +6,9 @@ export default function EnTete() {
   return (
     <header className="flex items-center justify-between">
       <Link href="/" className="flex items-center gap-2.5">
-        <span className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-vert">
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="#fff"
-            strokeWidth="2.6"
-            strokeLinecap="round"
-            aria-hidden="true"
-          >
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-        </span>
+        {/* Logo officiel : remplacez public/logo-embleme.png pour le changer partout dans l'application. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo-embleme.png" alt="" width={40} height={40} className="h-10 w-10" />
         <span className="text-[22px] font-extrabold tracking-tight">Medi24</span>
       </Link>
       <BoutonUrgence />
