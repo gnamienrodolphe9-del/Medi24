@@ -7,6 +7,7 @@ export type TypeDemande = "medicament" | "ordonnance" | "symptomes";
 
 export type EntreeDemande = {
   type: unknown;
+  prenom: unknown;
   telephone: unknown;
   produits: unknown; // une chaîne par produit
   texteLibre: unknown;
@@ -26,6 +27,7 @@ export type LigneDemandeValide = { produit: string; quantite: number };
 
 export type DemandeValide = {
   type: TypeDemande;
+  prenom: string;
   telephone: string;
   lignes: LigneDemandeValide[];
   texteLibre: string | null;
@@ -40,6 +42,8 @@ export type DemandeValide = {
 };
 
 export const LIMITES = {
+  prenomMin: 2,
+  prenomMax: 40,
   produitsMax: 10,
   produitMin: 2,
   produitMax: 120,
@@ -104,6 +108,16 @@ export function validerDemande(
       ? e.type
       : null;
   if (!type) erreurs.push("Type de demande inconnu.");
+
+  // Prénom obligatoire : lettres (accents compris), espaces, tirets et apostrophes seulement.
+  const prenomBrut = typeof e.prenom === "string" ? e.prenom.trim().replace(/\s+/g, " ") : "";
+  const prenom =
+    prenomBrut.length >= LIMITES.prenomMin &&
+    prenomBrut.length <= LIMITES.prenomMax &&
+    /^[\p{L}][\p{L} '’-]*$/u.test(prenomBrut)
+      ? prenomBrut
+      : null;
+  if (!prenom) erreurs.push("Indiquez votre prénom (lettres uniquement).");
 
   const telephone =
     typeof e.telephone === "string" ? normaliserTelephoneCi(e.telephone) : null;
@@ -192,12 +206,13 @@ export function validerDemande(
     erreurs.push("Partagez votre position ou indiquez un repère (quartier, carrefour…).");
   }
 
-  if (erreurs.length > 0 || !type || !telephone) return { ok: false, erreurs };
+  if (erreurs.length > 0 || !type || !telephone || !prenom) return { ok: false, erreurs };
 
   return {
     ok: true,
     valeur: {
       type,
+      prenom,
       telephone,
       lignes,
       texteLibre,

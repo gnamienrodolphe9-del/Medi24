@@ -38,6 +38,7 @@ export async function POST(requete: Request) {
 
   const verification = validerDemande({
     type: donnees.type,
+    prenom: donnees.prenom,
     telephone: donnees.telephone,
     produits: donnees.produits,
     texteLibre: donnees.texteLibre,
@@ -82,6 +83,7 @@ export async function POST(requete: Request) {
     .from("demandes")
     .insert({
       type: d.type,
+      prenom_patient: d.prenom,
       telephone_patient: d.telephone,
       telephone_verifie: true,
       position:

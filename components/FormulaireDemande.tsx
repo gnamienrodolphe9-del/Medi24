@@ -43,6 +43,16 @@ export default function FormulaireDemande() {
   const [messagePosition, setMessagePosition] = useState<string | null>(null);
   const [rechercheEnCours, setRechercheEnCours] = useState(false);
   const [repere, setRepere] = useState("");
+  const [prenom, setPrenom] = useState("");
+  // Le prénom est repris d'une demande à l'autre sur ce téléphone.
+  useEffect(() => {
+    try {
+      const memorise = localStorage.getItem("medi24-prenom");
+      if (memorise) setPrenom(memorise);
+    } catch {
+      // Mémoire indisponible : le patient le saisira.
+    }
+  }, []);
   const [telephone, setTelephone] = useState("");
   const compte = useCompte();
   // Patient déjà connecté sur cet appareil : son numéro est repris, aucun code à saisir.
@@ -108,6 +118,7 @@ export default function FormulaireDemande() {
   function entree() {
     return {
       type,
+      prenom,
       telephone,
       produits: listeProduits,
       texteLibre: symptomes,
@@ -178,6 +189,11 @@ export default function FormulaireDemande() {
       }
       setErreur(r.erreur);
       return;
+    }
+    try {
+      localStorage.setItem("medi24-prenom", prenom.trim());
+    } catch {
+      // Sans importance.
     }
     memoriserDemande(r.donnees.jeton);
     routeur.push(`/suivi/${r.donnees.jeton}`);
@@ -310,6 +326,25 @@ export default function FormulaireDemande() {
             className={CHAMP}
           />
         </label>
+      </Carte>
+
+      <Carte titre="Qui êtes-vous ?">
+        <label className="flex flex-col gap-1.5 text-sm font-semibold">
+          Prénom
+          <input
+            type="text"
+            autoComplete="given-name"
+            maxLength={LIMITES.prenomMax}
+            value={prenom}
+            onChange={(e) => setPrenom(e.target.value)}
+            placeholder="Votre prénom"
+            className={CHAMP}
+            required
+          />
+        </label>
+        <p className="text-[13px] text-discret">
+          Il permet à la pharmacie et au livreur de vérifier que la commande est bien pour vous.
+        </p>
       </Carte>
 
       <Carte titre="Votre numéro">

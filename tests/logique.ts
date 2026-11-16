@@ -31,11 +31,16 @@ egal("plafond atteint pas de vague", decider({ ...apres1, ageSecondes: 240, rapp
 egal("repli déjà fait pas répété", decider({ ...apres1, ageSecondes: 400, rappelEnvoye: true, repliFait: true, vaguesEnvoyees: 2 }), []);
 
 // Validation
-const bon = { type: "medicament", telephone: "07 00 00 00 00", produits: ["Doliprane 1000 x2", " "], texteLibre: "", age: "", poidsKg: "", grossesse: false, allergies: "", traitements: "", consentement: true, latitude: 5.33, longitude: -4.08, repere: "", avecOrdonnance: false };
+const bon = { type: "medicament", prenom: "Awa", telephone: "07 00 00 00 00", produits: ["Doliprane 1000 x2", " "], texteLibre: "", age: "", poidsKg: "", grossesse: false, allergies: "", traitements: "", consentement: true, latitude: 5.33, longitude: -4.08, repere: "", avecOrdonnance: false };
 const r1: any = validerDemande(bon);
 egal("valide", r1.ok, true);
 egal("ligne quantité", r1.valeur.lignes, [{ produit: "Doliprane 1000", quantite: 2 }]);
 egal("téléphone normalisé", r1.valeur.telephone, "+2250700000000");
+egal("prénom enregistré", r1.valeur.prenom, "Awa");
+egal("sans prénom refusé", (validerDemande({ ...bon, prenom: "" }) as any).ok, false);
+egal("prénom d'un seul caractère refusé", (validerDemande({ ...bon, prenom: "A" }) as any).ok, false);
+egal("prénom avec chiffres refusé", (validerDemande({ ...bon, prenom: "Awa123" }) as any).ok, false);
+egal("prénom composé accentué accepté", (validerDemande({ ...bon, prenom: "  Jean-Éric  N'Guessan " }) as any).valeur.prenom, "Jean-Éric N'Guessan");
 egal("sans consentement", (validerDemande({ ...bon, consentement: false }) as any).ok, false);
 egal("sans position ni repère", (validerDemande({ ...bon, latitude: null, longitude: null }) as any).ok, false);
 egal("repère seul accepté", (validerDemande({ ...bon, latitude: null, longitude: null, repere: "Carrefour Siporex" }) as any).ok, true);
@@ -50,7 +55,7 @@ egal("trop de produits", (validerDemande({ ...bon, produits: Array.from({ length
 egal("position invalide", (validerDemande({ ...bon, latitude: 200, longitude: 0 }) as any).ok, false);
 
 // Totaux
-const L = (o: any = {}) => ({ id: "x", produit: "p", disponible: true, substitut: null, prix_fcfa: 0, substitut_accepte: null, ...o });
+const L = (o: any) => ({ id: "x", produit: "p", disponible: true, substitut: null, prix_fcfa: 0, substitut_accepte: null, ...o });
 egal("total simple", totalLignes([L({ prix_fcfa: 1000 }), L({ prix_fcfa: 500 })]), { total: 1500, prixManquant: false });
 egal("substitut refusé", totalLignes([L({ prix_fcfa: 1000 }), L({ disponible: false, substitut: "s", prix_fcfa: 700, substitut_accepte: false })]), { total: 1000, prixManquant: false });
 egal("substitut accepté", totalLignes([L({ prix_fcfa: 1000 }), L({ disponible: false, substitut: "s", prix_fcfa: 700, substitut_accepte: true })]), { total: 1700, prixManquant: false });
