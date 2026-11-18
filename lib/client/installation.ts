@@ -33,10 +33,24 @@ export type EtatInstallation = {
   pret: boolean;
 };
 
+const CLE_INSTALLEE = "medi24-installee";
+
 function estInstallee(): boolean {
   if (typeof window === "undefined") return false;
   const nav = navigator as Navigator & { standalone?: boolean };
-  return window.matchMedia?.("(display-mode: standalone)").matches === true || nav.standalone === true;
+  const modes = ["standalone", "minimal-ui", "window-controls-overlay", "fullscreen"];
+  const enApplication =
+    nav.standalone === true ||
+    modes.some((m) => window.matchMedia?.(`(display-mode: ${m})`).matches === true) ||
+    document.referrer.startsWith("android-app://");
+  try {
+    // Mémoire : une fois l'application installée sur cet appareil, on ne la redemande plus,
+    // même si la page est ouverte dans un onglet du navigateur.
+    if (enApplication) localStorage.setItem(CLE_INSTALLEE, "1");
+    return enApplication || localStorage.getItem(CLE_INSTALLEE) === "1";
+  } catch {
+    return enApplication;
+  }
 }
 
 function estIos(): boolean {
@@ -74,6 +88,11 @@ export function useInstallation() {
       relire();
     };
     const surInstallation = () => {
+      try {
+        localStorage.setItem(CLE_INSTALLEE, "1");
+      } catch {
+        // Sans importance.
+      }
       window.__medi24Installation = null;
       relire();
     };

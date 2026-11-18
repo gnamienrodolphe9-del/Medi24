@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAdmin } from "@/lib/admin/useAdmin";
+import LogoMedi24 from "@/components/LogoMedi24";
 
 // Cadre commun des pages d'administration : en-tête, navigation, contrôle d'accès.
 // Le contenu (children) n'est affiché que pour un administrateur connecté.
@@ -19,7 +20,8 @@ export default function CadreAdmin({
   return (
     <main className="flex min-h-screen flex-col gap-5 px-5 pb-10 pt-5">
       <header className="flex items-center justify-between gap-3">
-        <Link href="/admin" className="text-lg font-extrabold tracking-tight">
+        <Link href="/admin" className="flex items-center gap-2.5 text-lg font-extrabold tracking-tight">
+          <LogoMedi24 taille={36} />
           Medi24 · Admin
         </Link>
         {(etat === "admin" || etat === "non-admin") && (

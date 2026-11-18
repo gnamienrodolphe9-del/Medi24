@@ -64,6 +64,7 @@ export default function PageEvaluation() {
         </Carte>
       )}
 
+      <Link href="/compte" className={BOUTON_PRINCIPAL}>Voir mon profil et mes demandes</Link>
       <Link href="/" className={BOUTON_SECONDAIRE}>Retour à l&apos;accueil</Link>
     </main>
   );

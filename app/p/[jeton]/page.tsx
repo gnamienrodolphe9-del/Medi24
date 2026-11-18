@@ -1,5 +1,6 @@
 "use client";
 
+import ResumeRemise, { type ResumeRemiseVue } from "@/components/ResumeRemise";
 import AssistantAlertes from "@/components/AssistantAlertes";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -18,6 +19,7 @@ import {
 import { envoyerJson, useSondage } from "@/lib/client/api";
 import { formaterFcfa, totalLignes } from "@/lib/totaux";
 import type { VuePharmacie } from "@/lib/serveur/pharmacie";
+import LogoMedi24 from "@/components/LogoMedi24";
 
 // Page de réponse de la pharmacie : ouverte depuis le lien reçu par SMS, sans compte.
 export default function PagePharmacie() {
@@ -30,11 +32,7 @@ export default function PagePharmacie() {
   return (
     <main className="flex min-h-screen flex-col gap-4 px-5 pb-10 pt-5">
       <header className="flex items-center gap-2.5">
-        <span className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-vert">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true">
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-        </span>
+        <LogoMedi24 taille={40} />
         <span className="text-[22px] font-extrabold tracking-tight">Medi24 · Pharmacie</span>
       </header>
 
@@ -297,6 +295,7 @@ function SuiteReponse({ jeton, vue, rafraichir }: { jeton: string; vue: VuePharm
   const d = vue.demande;
   const [telLivreur, setTelLivreur] = useState("");
   const [code, setCode] = useState("");
+  const [resume, setResume] = useState<ResumeRemiseVue | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [occupe, setOccupe] = useState(false);
@@ -335,6 +334,27 @@ function SuiteReponse({ jeton, vue, rafraichir }: { jeton: string; vue: VuePharm
     }
     if (succes) setMessage(succes);
     await rafraichir();
+  }
+
+  // Étape 1 de la remise : le code est vérifié, la commande s'affiche, rien n'est encore enregistré.
+  async function verifierCodePatient() {
+    setErreur(null);
+    setMessage(null);
+    setOccupe(true);
+    const r = await envoyerJson<{ resume: ResumeRemiseVue | null }>(`/api/pharmacie/${jeton}`, {
+      action: "apercu_code",
+      code,
+    });
+    setOccupe(false);
+    if (!r.ok) {
+      setErreur(r.erreur);
+      return;
+    }
+    if (!r.donnees.resume) {
+      setErreur("Commande introuvable.");
+      return;
+    }
+    setResume(r.donnees.resume);
   }
 
   if (reponse.statut === "indisponible") {
@@ -428,23 +448,40 @@ function SuiteReponse({ jeton, vue, rafraichir }: { jeton: string; vue: VuePharm
           )}
 
           {d.etat === "prete" && d.mode === "retrait" && (
-            <Carte titre="Remise au patient">
-              <MessageInfo>Commande prête. Le patient a été prévenu par SMS.</MessageInfo>
-              {vue.codeBloque ? (
-                <MessageErreur>Trop d&apos;essais de code. Contactez Medi24.</MessageErreur>
-              ) : (
-                <>
-                  <label className="flex flex-col gap-1.5 text-sm font-semibold">
-                    Code à 4 chiffres donné par le patient
-                    <input inputMode="numeric" maxLength={4} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-                      className={`${CHAMP} text-center text-3xl font-extrabold tracking-[0.4em]`} />
-                  </label>
-                  <button type="button" disabled={occupe || code.length !== 4} onClick={() => action({ action: "valider_code", code }, "Remise enregistrée. Merci !")} className={BOUTON_PRINCIPAL}>
-                    Valider la remise
-                  </button>
-                </>
-              )}
-            </Carte>
+            resume ? (
+              <ResumeRemise
+                resume={resume}
+                occupe={occupe}
+                libelleConfirmer="C'est bien lui : confirmer la remise"
+                surConfirmer={async () => {
+                  await action({ action: "valider_code", code }, "Remise enregistrée. Merci !");
+                  setResume(null);
+                  setCode("");
+                }}
+                surAnnuler={() => {
+                  setResume(null);
+                  setCode("");
+                }}
+              />
+            ) : (
+              <Carte titre="Remise au patient">
+                <MessageInfo>Commande prête. Le patient a été prévenu par SMS.</MessageInfo>
+                {vue.codeBloque ? (
+                  <MessageErreur>Trop d&apos;essais de code. Contactez Medi24.</MessageErreur>
+                ) : (
+                  <>
+                    <label className="flex flex-col gap-1.5 text-sm font-semibold">
+                      Code à 4 chiffres donné par le patient
+                      <input inputMode="numeric" maxLength={4} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+                        className={`${CHAMP} text-center text-3xl font-extrabold tracking-[0.4em]`} />
+                    </label>
+                    <button type="button" disabled={occupe || code.length !== 4} onClick={verifierCodePatient} className={BOUTON_PRINCIPAL}>
+                      Vérifier le code
+                    </button>
+                  </>
+                )}
+              </Carte>
+            )
           )}
 
           {(d.etat === "prete" || d.etat === "en_livraison") && d.mode === "livraison" && (

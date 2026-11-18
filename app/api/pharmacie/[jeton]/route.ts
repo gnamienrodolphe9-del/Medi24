@@ -1,6 +1,7 @@
 import { creerClientServeur } from "@/lib/supabase/serveur";
 import { jetonValide } from "@/lib/jeton";
 import { codeValide, codesIdentiques, ESSAIS_CODE_MAX } from "@/lib/code";
+import { chargerResume } from "@/lib/serveur/resume_remise";
 import { normaliserTelephoneCi } from "@/lib/telephone";
 import { chargerAlerte, construireVuePharmacie } from "@/lib/serveur/pharmacie";
 import { adresseSite, erreur, lireCorps, ok } from "@/lib/serveur/http";
@@ -299,7 +300,9 @@ export async function POST(requete: Request, { params }: Contexte) {
   }
 
   // --- Retrait : le pharmacien saisit le code donné par le patient ---
-  if (corps.action === "valider_code") {
+  // « apercu_code » : vérifie le code et montre le résumé de la commande, sans rien enregistrer.
+  // « valider_code » : même vérification, puis enregistre la remise (après confirmation du pharmacien).
+  if (corps.action === "valider_code" || corps.action === "apercu_code") {
     if (demande.mode !== "retrait") return erreur("Cette commande est une livraison : le code est saisi par le livreur.");
     if (demande.etat !== "prete") return erreur("La commande doit d'abord être marquée prête.");
     if (demande.essais_code >= ESSAIS_CODE_MAX) {
@@ -312,6 +315,11 @@ export async function POST(requete: Request, { params }: Contexte) {
       await db.from("demandes").update({ essais_code: demande.essais_code + 1 }).eq("id", demande.id);
       const restants = ESSAIS_CODE_MAX - demande.essais_code - 1;
       return erreur(`Code incorrect. ${restants > 0 ? `${restants} essai(s) restant(s).` : "Plus d'essai possible."}`, 403);
+    }
+
+    if (corps.action === "apercu_code") {
+      const resume = await chargerResume(db, demande.id, { avecProduits: true });
+      return ok({ resume });
     }
 
     await db

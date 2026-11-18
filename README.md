@@ -207,3 +207,16 @@ Après changement, désinstallez puis réinstallez l'application : les télépho
 **Compte patient** : le numéro vérifié par SMS identifie le patient. Après le premier code, l'appareil garde une session de
 180 jours (cookie `medi24_session`, empreinte seule en base, table `sessions_patient`) : plus de code à saisir, et la page
 `/compte` liste les demandes. Sur un autre téléphone, un code SMS reconnecte. Migration à exécuter : `0009_comptes_patients.sql`.
+
+## Résumé avant remise (v9)
+
+À la remise (retrait en pharmacie ou livraison), le code à 4 chiffres du patient ne valide plus directement : il affiche d'abord un
+**résumé de la commande** (téléphone du patient, repère, date, articles, prix, total). La personne vérifie que cela correspond à
+celui qui se présente, puis confirme (« C'est bien lui ») ou annule. Rien n'est enregistré avant cette confirmation.
+Actions serveur : `apercu_code` (pharmacie) et `apercu_remise` (livreur), puis `valider_code` / `remis` comme avant.
+Jamais affichés : âge, poids, grossesse, allergies, traitements, symptômes, photo d'ordonnance.
+Le livreur voit les noms des produits (il doit vérifier que le sachet est bien la commande livrée), seulement après le code du
+patient. Réglage : `RESUME_LIVREUR_PRODUITS=non` les cache (nombre d'articles et total seulement).
+
+Prénom : obligatoire dans le formulaire (lettres, 2 à 40 caractères), enregistré dans `demandes.prenom_patient` (migration
+`0010_prenom_patient.sql`) et affiché dans le résumé de remise. Repris d'une demande à l'autre sur le téléphone.

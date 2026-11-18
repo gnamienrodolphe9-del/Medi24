@@ -1,8 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Figtree } from "next/font/google";
 import "./globals.css";
-import EnregistrementServiceWorker from "@/components/EnregistrementServiceWorker";
 import { VERSION_APP } from "@/lib/version";
+import EnregistrementServiceWorker from "@/components/EnregistrementServiceWorker";
 
 const figtree = Figtree({
   subsets: ["latin"],
@@ -19,8 +19,6 @@ export const metadata: Metadata = {
   applicationName: "Medi24",
   icons: { apple: "/icons/apple-touch-icon.png" },
 };
-
-
 
 export const viewport: Viewport = {
   width: "device-width",

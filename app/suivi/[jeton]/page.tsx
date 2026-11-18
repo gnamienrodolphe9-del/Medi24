@@ -80,6 +80,11 @@ export default function PageSuivi() {
       {suivi && !["remise", "annulee", "expiree"].includes(suivi.etat) && (
         <AssistantAlertes genre="suivi" jeton={jeton} role="patient" />
       )}
+      {suivi && suivi.etat !== "remise" && (
+        <Link href="/compte" className="flex min-h-12 items-center justify-center text-[15px] font-bold text-vert underline">
+          Mon profil et mes demandes
+        </Link>
+      )}
     </main>
   );
 }
@@ -184,6 +189,9 @@ function Contenu({ jeton, suivi, rafraichir }: { jeton: string; suivi: SuiviPati
           {!suivi.evaluationFaite && (
             <Link href={`/evaluation/${jeton}`} className={BOUTON_PRINCIPAL}>Donner mon avis (30 secondes)</Link>
           )}
+          <Link href="/compte" className={suivi.evaluationFaite ? BOUTON_PRINCIPAL : BOUTON_SECONDAIRE}>
+            Voir mon profil et mes demandes
+          </Link>
           <Link href="/" className={BOUTON_SECONDAIRE}>Retour à l&apos;accueil</Link>
         </>
       )}

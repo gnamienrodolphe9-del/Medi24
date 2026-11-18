@@ -3,6 +3,7 @@
 import AssistantAlertes from "@/components/AssistantAlertes";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import ResumeRemise, { type ResumeRemiseVue } from "@/components/ResumeRemise";
 import CarteSimple, { type Repere } from "@/components/CarteSimple";
 import {
   BOUTON_PRINCIPAL,
@@ -16,6 +17,7 @@ import {
 } from "@/components/ui";
 import { envoyerJson, useSondage } from "@/lib/client/api";
 import { lienItineraire } from "@/lib/garde";
+import LogoMedi24 from "@/components/LogoMedi24";
 
 type VueLivreur = {
   etat: "creee" | "parti" | "arrive" | "remis";
@@ -51,6 +53,7 @@ export default function PageLivreur() {
   const [erreurAction, setErreurAction] = useState<string | null>(null);
   const [occupe, setOccupe] = useState(false);
   const [code, setCode] = useState("");
+  const [resume, setResume] = useState<ResumeRemiseVue | null>(null);
   const [gps, setGps] = useState<"inactif" | "ok" | "refuse">("inactif");
   const derniereEnvoi = useRef(0);
 
@@ -98,6 +101,26 @@ export default function PageLivreur() {
     await rafraichir();
   }
 
+  // Étape 1 de la remise : le code est vérifié, la commande s'affiche, rien n'est encore enregistré.
+  async function verifierCodePatient() {
+    setErreurAction(null);
+    setOccupe(true);
+    const r = await envoyerJson<{ resume: ResumeRemiseVue | null }>(`/api/livreur/${jeton}`, {
+      action: "apercu_remise",
+      code,
+    });
+    setOccupe(false);
+    if (!r.ok) {
+      setErreurAction(r.erreur);
+      return;
+    }
+    if (!r.donnees.resume) {
+      setErreurAction("Commande introuvable.");
+      return;
+    }
+    setResume(r.donnees.resume);
+  }
+
   const reperes = useMemo<Repere[]>(() => {
     const r: Repere[] = [];
     if (vue?.pharmacie?.latitude != null && vue.pharmacie.longitude != null) {
@@ -112,11 +135,7 @@ export default function PageLivreur() {
   return (
     <main className="flex min-h-screen flex-col gap-4 px-5 pb-10 pt-5">
       <header className="flex items-center gap-2.5">
-        <span className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-vert">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true">
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-        </span>
+        <LogoMedi24 taille={40} />
         <span className="text-[22px] font-extrabold tracking-tight">Medi24 · Livraison</span>
       </header>
 
@@ -188,19 +207,36 @@ export default function PageLivreur() {
                 </button>
               )}
 
-              <Carte titre="3. Remise : code du patient">
-                {vue.codeBloque ? (
-                  <MessageErreur>Trop d&apos;essais. Contactez la pharmacie.</MessageErreur>
-                ) : (
-                  <>
-                    <p className="text-[14px] leading-snug text-discret">Demandez au patient son code à 4 chiffres, puis saisissez-le.</p>
-                    <input inputMode="numeric" maxLength={4} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))} className={`${CHAMP} text-center text-3xl font-extrabold tracking-[0.4em]`} aria-label="Code du patient" />
-                    <button type="button" disabled={occupe || code.length !== 4} onClick={() => agir({ action: "remis", code })} className={BOUTON_PRINCIPAL}>
-                      Valider la remise
-                    </button>
-                  </>
-                )}
-              </Carte>
+              {resume ? (
+                <ResumeRemise
+                  resume={resume}
+                  occupe={occupe}
+                  libelleConfirmer="C'est bien lui : confirmer la livraison"
+                  surConfirmer={async () => {
+                    await agir({ action: "remis", code });
+                    setResume(null);
+                    setCode("");
+                  }}
+                  surAnnuler={() => {
+                    setResume(null);
+                    setCode("");
+                  }}
+                />
+              ) : (
+                <Carte titre="3. Remise : code du patient">
+                  {vue.codeBloque ? (
+                    <MessageErreur>Trop d&apos;essais. Contactez la pharmacie.</MessageErreur>
+                  ) : (
+                    <>
+                      <p className="text-[14px] leading-snug text-discret">Demandez au patient son code à 4 chiffres, puis saisissez-le.</p>
+                      <input inputMode="numeric" maxLength={4} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))} className={`${CHAMP} text-center text-3xl font-extrabold tracking-[0.4em]`} aria-label="Code du patient" />
+                      <button type="button" disabled={occupe || code.length !== 4} onClick={verifierCodePatient} className={BOUTON_PRINCIPAL}>
+                        Vérifier le code
+                      </button>
+                    </>
+                  )}
+                </Carte>
+              )}
             </>
           )}
         </>

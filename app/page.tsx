@@ -1,6 +1,7 @@
 import Link from "next/link";
 import EnTete from "@/components/EnTete";
 import DemandeEnCours from "@/components/DemandeEnCours";
+import InstallerApp from "@/components/InstallerApp";
 
 // Écran d'accueil : deux entrées de même taille, Urgence et Médicament (maquette 1).
 export default function Accueil() {
@@ -8,6 +9,7 @@ export default function Accueil() {
     <main className="flex min-h-screen flex-col gap-5 px-5 pb-6 pt-5">
       <EnTete />
       <DemandeEnCours />
+      <InstallerApp />
 
       <section className="flex flex-col gap-2.5">
         <p className="inline-flex w-fit items-center gap-2 rounded-2xl bg-vert-clair px-3 py-1.5 text-[13px] font-semibold text-vert-fonce">

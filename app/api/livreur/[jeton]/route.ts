@@ -1,6 +1,8 @@
 import { creerClientServeur } from "@/lib/supabase/serveur";
 import { jetonValide } from "@/lib/jeton";
 import { codeValide, codesIdentiques, ESSAIS_CODE_MAX } from "@/lib/code";
+import { chargerResume } from "@/lib/serveur/resume_remise";
+import { options } from "@/lib/options";
 import { erreur, lireCorps, ok } from "@/lib/serveur/http";
 
 export const dynamic = "force-dynamic";
@@ -148,7 +150,9 @@ export async function POST(requete: Request, { params }: Contexte) {
     return ok();
   }
 
-  if (corps.action === "remis") {
+  // « apercu_remise » : vérifie le code et montre le résumé de la commande, sans rien enregistrer.
+  // « remis » : même vérification, puis enregistre la remise (après confirmation du livreur).
+  if (corps.action === "remis" || corps.action === "apercu_remise") {
     if (c.livraison.etat !== "parti" && c.livraison.etat !== "arrive") return erreur("Action impossible à ce stade.");
     if (c.demande.essais_code >= ESSAIS_CODE_MAX) return erreur("Trop d'essais. Contactez la pharmacie.", 423);
     const code = typeof corps.code === "string" ? corps.code.trim() : "";
@@ -158,6 +162,11 @@ export async function POST(requete: Request, { params }: Contexte) {
       await db.from("demandes").update({ essais_code: c.demande.essais_code + 1 }).eq("id", c.demande.id);
       const restants = ESSAIS_CODE_MAX - c.demande.essais_code - 1;
       return erreur(`Code incorrect. ${restants > 0 ? `${restants} essai(s) restant(s).` : "Plus d'essai possible."}`, 403);
+    }
+
+    if (corps.action === "apercu_remise") {
+      const resume = await chargerResume(db, c.demande.id, { avecProduits: options.resumeLivreurProduits() });
+      return ok({ resume });
     }
 
     await db.from("livraisons").update({ etat: "remis", remis_le: maintenant }).eq("id", c.livraison.id);

@@ -8,10 +8,30 @@ import { envoyerJson } from "@/lib/client/api";
 export type GenrePage = "gestion" | "alerte" | "suivi" | "livreur";
 export type EtatPush = "inconnu" | "non_supporte" | "inactif" | "actif" | "bloque";
 
-const CLE_PUBLIQUE = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "";
+// Clé publique : d'abord celle intégrée au site (si elle y est), puis celle que le serveur donne
+// à l'exécution (/api/push/cle). Cette seconde voie évite de dépendre du cache de construction.
+let CLE_PUBLIQUE = (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "").trim();
+let chargement: Promise<string> | null = null;
 
 export function pushConfigure(): boolean {
   return CLE_PUBLIQUE.length > 0;
+}
+
+export async function chargerCle(): Promise<string> {
+  if (CLE_PUBLIQUE) return CLE_PUBLIQUE;
+  if (!chargement) {
+    chargement = fetch("/api/push/cle", { cache: "no-store" })
+      .then((r) => r.json() as Promise<{ cle?: string }>)
+      .then((j) => {
+        CLE_PUBLIQUE = (j.cle ?? "").trim();
+        return CLE_PUBLIQUE;
+      })
+      .catch(() => "")
+      .finally(() => {
+        chargement = null;
+      });
+  }
+  return chargement;
 }
 
 export function pushSupporte(): boolean {
@@ -51,6 +71,7 @@ async function enregistrement(): Promise<ServiceWorkerRegistration> {
 }
 
 export async function lireEtatPush(): Promise<EtatPush> {
+  await chargerCle();
   if (!pushConfigure() || !pushSupporte()) return "non_supporte";
   if (Notification.permission === "denied") return "bloque";
   if (Notification.permission !== "granted") return "inactif";
@@ -68,7 +89,11 @@ export async function activerPush(
   genre: GenrePage,
   jeton: string
 ): Promise<{ ok: true } | { ok: false; raison: "refuse" | "non_supporte" | "erreur"; message: string }> {
-  if (!pushConfigure() || !pushSupporte()) {
+  await chargerCle();
+  if (!pushConfigure()) {
+    return { ok: false, raison: "erreur", message: "Les clés des notifications ne sont pas configurées sur le serveur." };
+  }
+  if (!pushSupporte()) {
     return { ok: false, raison: "non_supporte", message: "Ce navigateur ne permet pas les notifications." };
   }
   try {
@@ -100,6 +125,7 @@ export async function activerPush(
 // Réenregistre silencieusement l'appareil déjà autorisé (au cas où le serveur l'aurait oublié).
 export async function rafraichirAbonnement(genre: GenrePage, jeton: string): Promise<void> {
   try {
+    await chargerCle();
     if (!pushConfigure() || !pushSupporte() || Notification.permission !== "granted") return;
     const reg = await navigator.serviceWorker.getRegistration("/");
     const abonnement = await reg?.pushManager.getSubscription();

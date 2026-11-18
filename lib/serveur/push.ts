@@ -25,10 +25,15 @@ export type ContenuPush = {
 
 let configure: boolean | null = null;
 
+// Clé publique : VAPID_PUBLIC_KEY, ou à défaut NEXT_PUBLIC_VAPID_PUBLIC_KEY (les deux noms marchent).
+export function clePubliqueVapid(): string {
+  return (process.env.VAPID_PUBLIC_KEY || process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "").trim();
+}
+
 export function pushDisponible(): boolean {
-  if (configure !== null) return configure;
-  const publique = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-  const privee = process.env.VAPID_PRIVATE_KEY;
+  if (configure === true) return true;
+  const publique = clePubliqueVapid();
+  const privee = (process.env.VAPID_PRIVATE_KEY ?? "").trim();
   if (!publique || !privee) {
     configure = false;
     return false;

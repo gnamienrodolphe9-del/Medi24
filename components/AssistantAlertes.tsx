@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import { BOUTON_PRINCIPAL, BOUTON_SECONDAIRE, Carte } from "@/components/ui";
 import { useInstallation } from "@/lib/client/installation";
-// import { VERSION_APP } from "@/lib/version";
+import { VERSION_APP } from "@/lib/version";
 import {
   activerPush,
+  chargerCle,
   desactiverPush,
   essayerPush,
   lireEtatPush,
@@ -51,7 +52,10 @@ export default function AssistantAlertes({
   const [occupe, setOccupe] = useState(false);
   const [aideInstallation, setAideInstallation] = useState(false);
   const [message, setMessage] = useState<{ ton: "info" | "erreur"; texte: string } | null>(null);
-  const cles = pushConfigure();
+  const [cles, setCles] = useState(pushConfigure());
+  useEffect(() => {
+    void chargerCle().then((c) => setCles(c.length > 0));
+  }, []);
 
   useEffect(() => {
     let annule = false;
@@ -138,7 +142,7 @@ export default function AssistantAlertes({
   if (toutEstPret) {
     return (
       <p className="text-center text-[12.5px] text-discret" role="status">
-        ✓ Les alertes et notifications sont activées 
+        ✓ Les alertes et notifications sont activées · {VERSION_APP}
       </p>
     );
   }
@@ -214,8 +218,8 @@ export default function AssistantAlertes({
 
         {!cles && (
           <p className="text-[13px] leading-snug text-discret">
-            Les notifications ne sont pas encore configurées sur ce site (clés manquantes). Vous pouvez quand même
-            installer l&apos;application.
+            Les clés des notifications ne sont pas configurées sur le serveur (variables VAPID_PRIVATE_KEY et
+            NEXT_PUBLIC_VAPID_PUBLIC_KEY dans Vercel, puis redéploiement). Vous pouvez quand même installer l&apos;application.
           </p>
         )}
 
@@ -255,7 +259,7 @@ export default function AssistantAlertes({
         )}
       </div>
 
-      {/* <p className="text-[11.5px] text-discret">Version {VERSION_APP}</p> */}
+      <p className="text-[11.5px] text-discret">Version {VERSION_APP}</p>
 
       {message && (
         <p
